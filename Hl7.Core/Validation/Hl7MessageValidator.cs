@@ -1,5 +1,6 @@
 namespace Hl7.Core.Validation;
 
+using System.Reflection;
 using Hl7.Core.Base;
 using Hl7.Core.Segments;
 using Hl7.Core.Utils;
@@ -83,6 +84,11 @@ public class Hl7MessageValidator
         // Check for required segments based on message type
         ValidateSegmentHierarchy(message, result);
 
+        foreach (var segment in message.Segments)
+        {
+            ValidateSegmentDataElements(segment, result, strictRequired: false);
+        }
+
         result.IsValid = result.Errors.Count == 0;
         return result;
     }
@@ -121,6 +127,11 @@ public class Hl7MessageValidator
         else
         {
             AddIssue(result, strict, $"Unsupported message type for CAIR2 bidirectional validation: '{messageType}'");
+        }
+
+        foreach (var segment in message.Segments)
+        {
+            ValidateSegmentDataElements(segment, result, strictRequired: strict);
         }
 
         result.IsValid = result.Errors.Count == 0;
@@ -398,6 +409,8 @@ public class Hl7MessageValidator
                 break;
         }
 
+        ValidateSegmentDataElements(segment, result, strictRequired: false);
+
         result.IsValid = result.Errors.Count == 0;
         return result;
     }
@@ -444,5 +457,42 @@ public class Hl7MessageValidator
         {
             result.Errors.Add("OBX-3: ObservationIdentifier is required");
         }
+    }
+
+    private void ValidateSegmentDataElements(Segment segment, ValidationResult result, bool strictRequired)
+    {
+        var properties = segment.GetType()
+            .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+            .Select(p => new { Property = p, Attribute = p.GetCustomAttribute<DataElementAttribute>() })
+            .Where(p => p.Attribute != null)
+            .ToList();
+
+        foreach (var entry in properties)
+        {
+            var position = entry.Attribute!.Position;
+            var name = string.IsNullOrWhiteSpace(entry.Attribute.Name) ? entry.Property.Name : entry.Attribute.Name;
+            var fieldIndex = segment is MSHSegment ? position - 1 : position;
+            var fieldValue = GetFieldValue(segment, fieldIndex);
+
+            switch (entry.Attribute.Status)
+            {
+                case ElementUsage.Required:
+                    if (string.IsNullOrWhiteSpace(fieldValue))
+                        AddIssue(result, strictRequired, $"{segment.SegmentId}-{position}: {name} is required");
+                    break;
+                case ElementUsage.NotSupported:
+                    if (!string.IsNullOrWhiteSpace(fieldValue))
+                        result.Warnings.Add($"{segment.SegmentId}-{position}: {name} is not supported");
+                    break;
+            }
+        }
+    }
+
+    private static string GetFieldValue(Segment segment, int index)
+    {
+        if (index <= 0)
+            return string.Empty;
+
+        return segment.Fields.TryGetValue(index, out var value) ? value : string.Empty;
     }
 }

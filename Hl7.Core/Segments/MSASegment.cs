@@ -6,13 +6,13 @@ using Hl7.Core.Utils;
 [Segment("MSA")]
 public class MSASegment : Segment
 {
-    [DataElement(1)]
+    [DataElement(1, "Acknowledgment Code", ElementUsage.Required)]
     public string AcknowledgmentCode { get; set; } = string.Empty;
 
-    [DataElement(2)]
+    [DataElement(2, "Message Control ID", ElementUsage.Required)]
     public string MessageControlId { get; set; } = string.Empty;
 
-    [DataElement(3)]
+    [DataElement(3, "Text Message", ElementUsage.RequiredButMayBeEmpty)]
     public string TextMessage { get; set; } = string.Empty;
 
     public MSASegment() : base("MSA")

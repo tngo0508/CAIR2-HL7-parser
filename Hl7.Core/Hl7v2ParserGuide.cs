@@ -191,25 +191,27 @@ public class Hl7v2ParserGuide
      *   Field 6: Mother's Maiden Name
      *   Field 7: Date of Birth
      *   Field 8: Administrative Sex (M/F/O/U)
-     *   Field 9: Race
-     *   Field 10: Patient Address
-     *   Field 11: County Code
-     *   Field 12: Phone Number - Home
-     *   Field 13: Phone Number - Business
-     *   Field 14: Primary Language
+     *   Field 10: Race
+     *   Field 11: Patient Address
+     *   Field 12: County Code
+     *   Field 13: Phone Number - Home
+     *   Field 14: Phone Number - Business
+     *   Field 15: Primary Language
      * 
      * RXA - Pharmacy/Vaccine Administration
      *   Field 1: Give Sub-ID Counter
      *   Field 2: Administration Sub-ID Counter
-     *   Field 3: Date/Time of Administration
-     *   Field 4: Date/Time of Administration End
+     *   Field 3: Date/Time Start of Administration
+     *   Field 4: Date/Time End of Administration
      *   Field 5: Administered Code
      *   Field 6: Administered Amount
      *   Field 7: Administered Units
-     *   Field 8: Administration Notes
-     *   Field 9: Administering Provider
+     *   Field 9: Administration Notes
      *   Field 10: Administering Provider
      *   Field 11: Administered-at Location
+     *   Field 12: Administered per (Time Unit)
+     *   Field 13: Administered Strength
+     *   Field 14: Administered Strength Units
      *   Field 15: Substance Lot Number
      *   Field 16: Substance Expiration Date
      *   Field 17: Substance Manufacturer Name

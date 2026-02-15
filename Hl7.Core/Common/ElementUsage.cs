@@ -23,7 +23,12 @@ public enum ElementUsage
     /// <summary>
     /// Conditional (C): requirement depends on a condition predicate.
     /// </summary>
-    Conditional
+    Conditional,
+
+    /// <summary>
+    /// Not supported (X): should not be populated.
+    /// </summary>
+    NotSupported
 }
 
 public static class ElementUsageExtensions
@@ -34,6 +39,7 @@ public static class ElementUsageExtensions
         ElementUsage.RequiredButMayBeEmpty => "RE",
         ElementUsage.Optional => "O",
         ElementUsage.Conditional => "C",
+        ElementUsage.NotSupported => "X",
         _ => throw new ArgumentOutOfRangeException(nameof(usage), usage, "Unknown usage.")
     };
 
@@ -43,6 +49,7 @@ public static class ElementUsageExtensions
         "RE" => ElementUsage.RequiredButMayBeEmpty,
         "O" => ElementUsage.Optional,
         "C" => ElementUsage.Conditional,
+        "X" => ElementUsage.NotSupported,
         _ => throw new ArgumentException($"Unknown HL7 usage code: '{code}'.", nameof(code))
     };
 }

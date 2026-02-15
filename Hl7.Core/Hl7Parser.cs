@@ -125,101 +125,50 @@ public class Hl7Parser
         
         return segmentId switch
         {
-            "PID" => ParsePIDSegment(fields),
-            "OBR" => ParseOBRSegment(fields),
-            "OBX" => ParseOBXSegment(fields),
+            "PID" => ParseSegmentByAttributes<PIDSegment>(segmentId, fields),
+            "OBR" => ParseSegmentByAttributes<OBRSegment>(segmentId, fields),
+            "OBX" => ParseSegmentByAttributes<OBXSegment>(segmentId, fields),
             "RXA" => ParseRXASegment(fields),
-            "RXR" => ParseRXRSegment(fields),
-            "ORC" => ParseORCSegment(fields),
-            "PD1" => ParsePD1Segment(fields),
-            "NK1" => ParseNK1Segment(fields),
-            "QPD" => ParseQPDSegment(fields),
-            "RCP" => ParseRCPSegment(fields),
-            "QAK" => ParseQAKSegment(fields),
-            "MSA" => ParseMSASegment(fields),
-            "ERR" => ParseERRSegment(fields),
+            "RXR" => ParseSegmentByAttributes<RXRSegment>(segmentId, fields),
+            "ORC" => ParseSegmentByAttributes<ORCSegment>(segmentId, fields),
+            "PD1" => ParseSegmentByAttributes<PD1Segment>(segmentId, fields),
+            "NK1" => ParseSegmentByAttributes<NK1Segment>(segmentId, fields),
+            "QPD" => ParseSegmentByAttributes<QPDSegment>(segmentId, fields),
+            "RCP" => ParseSegmentByAttributes<RCPSegment>(segmentId, fields),
+            "QAK" => ParseSegmentByAttributes<QAKSegment>(segmentId, fields),
+            "MSA" => ParseSegmentByAttributes<MSASegment>(segmentId, fields),
+            "ERR" => ParseSegmentByAttributes<ERRSegment>(segmentId, fields),
             _ => ParseGenericSegment(segmentId, fields)
         };
     }
 
-    private PIDSegment ParsePIDSegment(string[] fields)
+    private TSegment ParseSegmentByAttributes<TSegment>(string segmentId, string[] fields)
+        where TSegment : Segment, new()
     {
-        var segment = new PIDSegment
+        var segment = new TSegment();
+        if (string.IsNullOrWhiteSpace(segment.SegmentId))
+            segment.SegmentId = segmentId;
+
+        var properties = segment.GetType()
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Select(p => new { Property = p, Attribute = p.GetCustomAttribute<DataElementAttribute>() })
+            .Where(p => p.Attribute != null)
+            .ToList();
+
+        foreach (var entry in properties)
         {
-            SegmentId = "PID",
-            SetId = ParseInt(UnescapeField(GetField(fields, 1))),
-            PatientId = UnescapeField(GetField(fields, 2)),
-            PatientIdentifierList = UnescapeField(GetField(fields, 3)),
-            AlternatePatientId = UnescapeField(GetField(fields, 4)),
-            PatientName = UnescapeField(GetField(fields, 5)),
-            MothersMaidenName = UnescapeField(GetField(fields, 6)),
-            DateOfBirth = UnescapeField(GetField(fields, 7)),
-            AdministrativeSex = UnescapeField(GetField(fields, 8)),
-            Race = UnescapeField(GetField(fields, 9)),
-            PatientAddress = UnescapeField(GetField(fields, 11)),      // ✅ FIXED: Was [10], should be [11]
-            CountyCode = UnescapeField(GetField(fields, 12)),          // ✅ FIXED: Was [11], should be [12]
-            PhoneNumberHome = UnescapeField(GetField(fields, 13)),     // ✅ FIXED: Was [12], should be [13]
-            PhoneNumberBusiness = UnescapeField(GetField(fields, 14))  // ✅ FIXED: Was [13], should be [14]
-        };
+            var position = entry.Attribute!.Position;
+            var rawValue = UnescapeField(GetField(fields, position));
 
-        if (fields.Length > 14)
-            segment.PrimaryLanguage = UnescapeField(GetField(fields, 15));
-
-        PopulateSegmentFields(segment, fields);
-        return segment;
-    }
-
-    private OBRSegment ParseOBRSegment(string[] fields)
-    {
-        var segment = new OBRSegment
-        {
-            SegmentId = "OBR",
-            SetId = ParseInt(UnescapeField(GetField(fields, 1))),
-            PlacerOrderNumber = UnescapeField(GetField(fields, 2)),
-            FillerOrderNumber = UnescapeField(GetField(fields, 3)),
-            UniversalServiceId = UnescapeField(GetField(fields, 4)),
-            Priority = ParseInt(UnescapeField(GetField(fields, 5))),
-            RequestedDateTime = UnescapeField(GetField(fields, 6)),
-            ObservationDateTime = UnescapeField(GetField(fields, 7)),
-            ObservationEndDateTime = UnescapeField(GetField(fields, 8)),
-            CollectorsComment = UnescapeField(GetField(fields, 9)),
-            OrdererSComments = UnescapeField(GetField(fields, 10)),
-            OrdererSName = UnescapeField(GetField(fields, 11)),
-            OrdererSAddress = UnescapeField(GetField(fields, 12)),
-            OrdererSPhoneNumber = UnescapeField(GetField(fields, 13))
-        };
-
-        if (fields.Length > 14)
-            segment.OrdererSEmailAddress = UnescapeField(GetField(fields, 14));
-
-        PopulateSegmentFields(segment, fields);
-        return segment;
-    }
-
-    private OBXSegment ParseOBXSegment(string[] fields)
-    {
-        var segment = new OBXSegment
-        {
-            SegmentId = "OBX",
-            SetId = ParseInt(UnescapeField(GetField(fields, 1))),
-            ValueType = UnescapeField(GetField(fields, 2)),
-            ObservationIdentifier = UnescapeField(GetField(fields, 3)),
-            ObservationSubId = UnescapeField(GetField(fields, 4)),
-            ObservationValue = UnescapeField(GetField(fields, 5)),
-            Units = UnescapeField(GetField(fields, 6)),
-            ReferenceRange = UnescapeField(GetField(fields, 7)),
-            AbnormalFlags = UnescapeField(GetField(fields, 8)),
-            Probability = UnescapeField(GetField(fields, 9)),
-            NatureOfAbnormalTest = UnescapeField(GetField(fields, 10)),
-            ObservationResultStatus = UnescapeField(GetField(fields, 11)),
-            DateTimeOfObservation = UnescapeField(GetField(fields, 12)),
-            ProducersReference = UnescapeField(GetField(fields, 13))
-        };
-
-        if (fields.Length > 14)
-            segment.ResponsibleObserver = UnescapeField(GetField(fields, 14));
-        if (fields.Length > 15)
-            segment.ObservationMethod = UnescapeField(GetField(fields, 15));
+            if (entry.Property.PropertyType == typeof(int))
+            {
+                entry.Property.SetValue(segment, ParseInt(rawValue));
+            }
+            else if (entry.Property.PropertyType == typeof(string))
+            {
+                entry.Property.SetValue(segment, rawValue);
+            }
+        }
 
         PopulateSegmentFields(segment, fields);
         return segment;
@@ -300,147 +249,6 @@ public class Hl7Parser
         }
 
         return true;
-    }
-
-    private RXRSegment ParseRXRSegment(string[] fields)
-    {
-        var segment = new RXRSegment
-        {
-            SegmentId = "RXR",
-            Route = UnescapeField(GetField(fields, 1)),
-            AdministrationSite = UnescapeField(GetField(fields, 2))
-        };
-
-        PopulateSegmentFields(segment, fields);
-        return segment;
-    }
-
-    private ORCSegment ParseORCSegment(string[] fields)
-    {
-        var segment = new ORCSegment
-        {
-            SegmentId = "ORC",
-            OrderControl = UnescapeField(GetField(fields, 1)),
-            PlacerOrderNumber = UnescapeField(GetField(fields, 2)),
-            FillerOrderNumber = UnescapeField(GetField(fields, 3)),
-            EnteredBy = UnescapeField(GetField(fields, 10)),
-            OrderingProvider = UnescapeField(GetField(fields, 12)),
-            EnteringOrganization = UnescapeField(GetField(fields, 17))
-        };
-
-        PopulateSegmentFields(segment, fields);
-        return segment;
-    }
-
-    private PD1Segment ParsePD1Segment(string[] fields)
-    {
-        var segment = new PD1Segment
-        {
-            SegmentId = "PD1",
-            PublicityCode = UnescapeField(GetField(fields, 11)),
-            ProtectionIndicator = UnescapeField(GetField(fields, 12)),
-            ProtectionIndicatorEffectiveDate = UnescapeField(GetField(fields, 13)),
-            ImmunizationRegistryStatus = UnescapeField(GetField(fields, 16)),
-            ImmunizationRegistryStatusEffectiveDate = UnescapeField(GetField(fields, 17))
-        };
-
-        PopulateSegmentFields(segment, fields);
-        return segment;
-    }
-
-    private NK1Segment ParseNK1Segment(string[] fields)
-    {
-        var segment = new NK1Segment
-        {
-            SegmentId = "NK1",
-            SetId = ParseInt(UnescapeField(GetField(fields, 1))),
-            Name = UnescapeField(GetField(fields, 2)),
-            Relationship = UnescapeField(GetField(fields, 3)),
-            Address = UnescapeField(GetField(fields, 4)),
-            PhoneNumber = UnescapeField(GetField(fields, 5))
-        };
-
-        PopulateSegmentFields(segment, fields);
-        return segment;
-    }
-
-    private QPDSegment ParseQPDSegment(string[] fields)
-    {
-        var segment = new QPDSegment
-        {
-            SegmentId = "QPD",
-            MessageQueryName = UnescapeField(GetField(fields, 1)),
-            QueryTag = UnescapeField(GetField(fields, 2)),
-            PatientIdentifierList = UnescapeField(GetField(fields, 3)),
-            PatientName = UnescapeField(GetField(fields, 4)),
-            MothersMaidenName = UnescapeField(GetField(fields, 5)),
-            DateOfBirth = UnescapeField(GetField(fields, 6)),
-            AdministrativeSex = UnescapeField(GetField(fields, 7)),
-            PatientAddress = UnescapeField(GetField(fields, 8)),
-            PhoneNumberHome = UnescapeField(GetField(fields, 9)),
-            MultipleBirthIndicator = UnescapeField(GetField(fields, 10)),
-            BirthOrder = UnescapeField(GetField(fields, 11))
-        };
-
-        PopulateSegmentFields(segment, fields);
-        return segment;
-    }
-
-    private RCPSegment ParseRCPSegment(string[] fields)
-    {
-        var segment = new RCPSegment
-        {
-            SegmentId = "RCP",
-            QueryPriority = UnescapeField(GetField(fields, 1)),
-            QuantityLimitedRequest = UnescapeField(GetField(fields, 2)),
-            ResponseModality = UnescapeField(GetField(fields, 3))
-        };
-
-        PopulateSegmentFields(segment, fields);
-        return segment;
-    }
-
-    private QAKSegment ParseQAKSegment(string[] fields)
-    {
-        var segment = new QAKSegment
-        {
-            SegmentId = "QAK",
-            QueryTag = UnescapeField(GetField(fields, 1)),
-            QueryResponseStatus = UnescapeField(GetField(fields, 2)),
-            MessageQueryName = UnescapeField(GetField(fields, 3))
-        };
-
-        PopulateSegmentFields(segment, fields);
-        return segment;
-    }
-
-    private MSASegment ParseMSASegment(string[] fields)
-    {
-        var segment = new MSASegment
-        {
-            SegmentId = "MSA",
-            AcknowledgmentCode = UnescapeField(GetField(fields, 1)),
-            MessageControlId = UnescapeField(GetField(fields, 2)),
-            TextMessage = UnescapeField(GetField(fields, 3))
-        };
-
-        PopulateSegmentFields(segment, fields);
-        return segment;
-    }
-
-    private ERRSegment ParseERRSegment(string[] fields)
-    {
-        var segment = new ERRSegment
-        {
-            SegmentId = "ERR",
-            ErrorCodeAndLocation = UnescapeField(GetField(fields, 1)),
-            ErrorLocation = UnescapeField(GetField(fields, 2)),
-            Hl7ErrorCode = UnescapeField(GetField(fields, 3)),
-            Severity = UnescapeField(GetField(fields, 4))
-        };
-
-        PopulateSegmentFields(segment, fields);
-        return segment;
     }
 
     private Segment ParseGenericSegment(string segmentId, string[] fields)

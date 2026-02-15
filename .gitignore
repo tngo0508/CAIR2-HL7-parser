@@ -1,14 +1,12 @@
+# .NET Core
 bin/
 obj/
-/packages/
-riderModule.iml
-/_ReSharper.Caches/
 
-# Visual Studio
-.vs/
-.vscode/
-*.user
+# User-specific files
+*.rsuser
 *.suo
+*.user
+*.userosscache
 *.sln.docstates
 
 # Build results
@@ -18,15 +16,23 @@ riderModule.iml
 [Rr]eleases/
 x64/
 x86/
+[Bb]in/
+[Oo]bj/
 
-# NuGet
-*.nupkg
-*.snupkg
-
-# Rider
+# JetBrains Rider
 .idea/
-*.swp
-*.swo
+*.sln.DotSettings.user
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.dll
+*.exe
+*.pdb
+*.nupkg
 
 # macOS
 .DS_Store

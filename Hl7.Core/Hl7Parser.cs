@@ -28,8 +28,8 @@ public class Hl7Parser
     /// </summary>
     public Hl7Message ParseMessage(string hl7Message)
     {
-        if (string.IsNullOrWhiteSpace(hl7Message))
-            throw new ArgumentException("HL7 message cannot be null or empty");
+        if (string.IsNullOrEmpty(hl7Message))
+            return new Hl7Message();
 
         var message = new Hl7Message();
         var lines = hl7Message.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -72,11 +72,14 @@ public class Hl7Parser
         // Extract separators from the MSH segment
         _separators = Hl7Separators.ParseFromMSH(segmentLine);
         
-        var fields = SplitFields(segmentLine, _separators.FieldSeparator);
+        // MSH is special. The field separator is the 4th character (index 3).
+        var fieldSeparator = segmentLine[3];
         
-        // HL7v2 MSH Special Case: After splitting by |, array indices are:
-        // [0] = "MSH", [1] = encoding chars, [2] = SendingApplication, [3] = SendingFacility, ...
-        // So we need to use [index+1] to get the right HL7 field
+        // In HL7, MSH is the only segment where the segment ID is followed immediately by the field separator,
+        // and that separator itself is MSH-1.
+        // segmentLine: "MSH|^~\\&|..."
+        // fields: ["MSH", "^~\\&", "...", ...]
+        var fields = segmentLine.Split(fieldSeparator);
         
         var mshSegment = new MSHSegment
         {
@@ -104,9 +107,10 @@ public class Hl7Parser
         };
 
         mshSegment.Fields = new Dictionary<int, string>();
+        mshSegment.Fields[1] = fieldSeparator.ToString(); // MSH-1 is the separator
         for (int i = 1; i < fields.Length; i++)
         {
-            mshSegment.Fields[i] = UnescapeField(fields[i]);
+            mshSegment.Fields[i + 1] = UnescapeField(fields[i]);
         }
 
         return mshSegment;

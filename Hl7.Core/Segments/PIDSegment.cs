@@ -95,6 +95,72 @@ public class PIDSegment : Segment
     public string PrimaryLanguage { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the Marital Status (PID-16)
+    /// </summary>
+    [DataElement(16, "Marital Status", ElementUsage.Optional)]
+    public string MaritalStatus { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Religion (PID-17)
+    /// </summary>
+    [DataElement(17, "Religion", ElementUsage.Optional)]
+    public string Religion { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Patient Account Number (PID-18)
+    /// </summary>
+    [DataElement(18, "Patient Account Number", ElementUsage.Optional)]
+    public string PatientAccountNumber { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the SSN Number - Patient (PID-19)
+    /// </summary>
+    [DataElement(19, "SSN Number - Patient", ElementUsage.Optional)]
+    public string SSNNumberPatient { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Ethnic Group (PID-22)
+    /// </summary>
+    [DataElement(22, "Ethnic Group", ElementUsage.Optional)]
+    public string EthnicGroup { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Birth Place (PID-23)
+    /// </summary>
+    [DataElement(23, "Birth Place", ElementUsage.Optional)]
+    public string BirthPlace { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Multiple Birth Indicator (PID-24)
+    /// </summary>
+    [DataElement(24, "Multiple Birth Indicator", ElementUsage.Optional)]
+    public string MultipleBirthIndicator { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Birth Order (PID-25)
+    /// </summary>
+    [DataElement(25, "Birth Order", ElementUsage.Optional)]
+    public string BirthOrder { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Citizenship (PID-26)
+    /// </summary>
+    [DataElement(26, "Citizenship", ElementUsage.Optional)]
+    public string Citizenship { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Last Update Date/Time (PID-33)
+    /// </summary>
+    [DataElement(33, "Last Update Date/Time", ElementUsage.Optional)]
+    public string LastUpdateDateTime { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Last Update Facility (PID-34)
+    /// </summary>
+    [DataElement(34, "Last Update Facility", ElementUsage.Optional)]
+    public string LastUpdateFacility { get; set; } = string.Empty;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="PIDSegment"/> class
     /// </summary>
     public PIDSegment() : base("PID")

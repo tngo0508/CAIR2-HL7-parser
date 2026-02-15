@@ -1,7 +1,7 @@
-namespace Hl7.Core.CAIR2;
-
 using Hl7.Core.Base;
 using Hl7.Core.Segments;
+
+namespace Hl7.Core.CAIR2;
 
 /// <summary>
 /// CAIR2-specific HL7 parser for vaccination data

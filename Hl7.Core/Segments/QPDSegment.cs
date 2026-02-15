@@ -1,3 +1,5 @@
+using Hl7.Core.Common;
+
 namespace Hl7.Core.Segments;
 
 using Hl7.Core.Base;

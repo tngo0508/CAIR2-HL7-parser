@@ -1,6 +1,7 @@
-namespace Hl7.Core.Utils;
-
+using Hl7.Core.Common;
 using Hl7.Core.Types;
+
+namespace Hl7.Core.Utils;
 
 /// <summary>
 /// Utility class for HL7 field manipulation and parsing

@@ -3,6 +3,7 @@ using Hl7.Core.CAIR2;
 using Hl7.Core.Segments;
 using Hl7.Core.Validation;
 using Hl7.Core.Base;
+using Hl7.Core.Common;
 
 namespace Hl7Test;
 
@@ -361,7 +362,7 @@ OBX|49|CE|30982-3^Reason applied by forecast logic to project this vaccine^LN|8|
         var parser = new Hl7Parser();
         var originalMessage = parser.ParseMessage(RealCAIR2Message);
         var msh = originalMessage.GetSegment<MSHSegment>("MSH");
-        var separators = new Hl7.Core.Utils.Hl7Separators();
+        var separators = new Hl7Separators();
         var serializer = new Hl7.Core.Hl7MessageSerializer(separators);
 
         // Act - Serialize first segment

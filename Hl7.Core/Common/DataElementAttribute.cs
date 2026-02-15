@@ -1,4 +1,6 @@
-namespace Hl7.Core.Utils;
+using Hl7.Core.Utils;
+
+namespace Hl7.Core.Common;
 
 public class DataElementAttribute : Attribute
 {

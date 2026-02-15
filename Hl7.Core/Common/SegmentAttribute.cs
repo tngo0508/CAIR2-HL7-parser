@@ -1,4 +1,4 @@
-namespace Hl7.Core.Utils;
+namespace Hl7.Core.Common;
 
 public class SegmentAttribute : Attribute
 {

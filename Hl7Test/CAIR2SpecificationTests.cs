@@ -51,6 +51,59 @@ PID|1||123456789^^^MR||DOE^JOHN^J^JR||19800101|M||2106-3^White^HL70005|123 MAIN 
 ORC|RE||123456^EMR|||||||||1234567890^Provider^Joe^^^^^^NPI
 RXA|0|1|20160701120000|20160701120000|90658^Influenza^CPT|0.5|mL^milliliters^UCUM||00^New immunization^HL70322|^LEFT ARM|IM^Intramuscular^HL70162|ABC12345|20180630|MSD^Merck^MVX|||||CP^Complete^HL70322|A";
 
+    private const string VXUSample2 = @"MSH|^~\&|MyEMR|DE000001||CAIR2|20200225123030||VXU^V04^VXU_V04|CA0001|P|2.5.1|||AL|AL||||||DE-000001
+PID|1||PA123456^^^XYZCLINIC^MR||JONES^GEORGE^M^JR|MILLER^MARTHA^G|20140227|M||2106-3^WHITE^HL70005|1234 W FIRST ST^^BEVERLY HILLS^CA^90210^^H||^PRN^PH^^^555^5555555~^PRN^CP^^^555^5551234~^NET^X.400^cair@cair.com||ENG^English^HL70296|||||||2186-5^not Hispanic or Latino^HL70189||Y|2
+PD1|||||||||||02^REMINDER/RECALL – ANY METHOD^HL70215|N|20140730|||A|20140730|
+NK1|1|JONES^MARTHA|MTH^MOTHER^HL70063||||||||||||||
+ORC|RE||197023^CMC|||||||^Clark^Dave||1245319599^Smith^Janet^^^^^^CMS_NPPES^^^^NPI^^^^^^^MD|||||
+RXA|0|1|20200225||08^HEPB-PEDIATRIC/ADOLESCENT^CVX|.5|mL^mL^UCUM||00^NEW IMMUNIZATION RECORD^NIP001|85041235^Bear^Elizabeth^^^^^^NG^^^^NP^^^^^^^^NP|^^^DE000001||||0039F|20200531|MSD^MERCK^MVX|||CP|A
+RXR|IM^INTRAMUSCULAR^HL70162|LA^LEFT ARM^HL70163
+OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligibility – Uninsured^HL70064||||||F|||20200225140500";
+
+    [Fact]
+    public void Parse_VXU_Sample2_Test()
+    {
+        // Act
+        var message = _parser.ParseMessage(VXUSample2);
+
+        // Assert
+        Assert.NotNull(message);
+        var msh = message.GetSegment<MSHSegment>("MSH");
+        Assert.Equal("VXU^V04^VXU_V04", msh.MessageType);
+        Assert.Equal("DE000001", msh.SendingFacility);
+
+        var pid = message.GetSegment<PIDSegment>("PID");
+        Assert.NotNull(pid);
+        Assert.Equal("JONES^GEORGE^M^JR", pid.PatientName);
+        Assert.Equal("20140227", pid.DateOfBirth);
+        Assert.Equal("2106-3^WHITE^HL70005", pid.Race);
+
+        var pd1 = message.GetSegment<PD1Segment>("PD1");
+        Assert.NotNull(pd1);
+        Assert.Equal("N", pd1.ProtectionIndicator);
+
+        var nk1 = message.GetSegment<NK1Segment>("NK1");
+        Assert.NotNull(nk1);
+        Assert.Equal("JONES^MARTHA", nk1.Name);
+        Assert.Equal("MTH^MOTHER^HL70063", nk1.Relationship);
+
+        var rxa = message.GetSegment<RXASegment>("RXA");
+        Assert.NotNull(rxa);
+        Assert.Equal("08^HEPB-PEDIATRIC/ADOLESCENT^CVX", rxa.AdministeredCode);
+        Assert.Equal(".5", rxa.AdministeredAmount);
+        Assert.Equal("0039F", rxa.SubstanceLotNumber);
+
+        var rxr = message.GetSegment<RXRSegment>("RXR");
+        Assert.NotNull(rxr);
+        Assert.Equal("IM^INTRAMUSCULAR^HL70162", rxr.Route);
+        Assert.Equal("LA^LEFT ARM^HL70163", rxr.AdministrationSite);
+
+        var obx = message.GetSegment<OBXSegment>("OBX");
+        Assert.NotNull(obx);
+        Assert.Equal("64994-7^Vaccine funding program eligibility category^LN", obx.ObservationIdentifier);
+        Assert.Equal("V03^VFC eligibility – Uninsured^HL70064", obx.ObservationValue);
+    }
+
     [Fact]
     public void Parse_VXU_Specification_Sample_Test()
     {

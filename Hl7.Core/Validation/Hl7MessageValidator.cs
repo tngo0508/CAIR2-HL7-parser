@@ -1,9 +1,10 @@
-namespace Hl7.Core.Validation;
-
 using System.Reflection;
 using Hl7.Core.Base;
+using Hl7.Core.Common;
 using Hl7.Core.Segments;
 using Hl7.Core.Utils;
+
+namespace Hl7.Core.Validation;
 
 /// <summary>
 /// Validates HL7 messages for compliance with HL7v2 standards

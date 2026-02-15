@@ -1,9 +1,10 @@
-namespace Hl7.Core;
-
 using System.Reflection;
 using Hl7.Core.Base;
+using Hl7.Core.Common;
 using Hl7.Core.Segments;
 using Hl7.Core.Utils;
+
+namespace Hl7.Core;
 
 /// <summary>
 /// Serializes Hl7Message objects back to HL7 string format

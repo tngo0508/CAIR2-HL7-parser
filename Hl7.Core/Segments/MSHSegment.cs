@@ -1,7 +1,8 @@
-namespace Hl7.Core.Segments;
-
 using Hl7.Core.Base;
+using Hl7.Core.Common;
 using Hl7.Core.Utils;
+
+namespace Hl7.Core.Segments;
 
 [Segment("MSH")]
 public class MSHSegment : Segment

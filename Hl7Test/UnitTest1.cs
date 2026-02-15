@@ -4,6 +4,7 @@ using Hl7.Core.Segments;
 using Hl7.Core.Validation;
 using Hl7.Core.Utils;
 using Hl7.Core.Base;
+using Hl7.Core.Common;
 
 namespace Hl7Test;
 

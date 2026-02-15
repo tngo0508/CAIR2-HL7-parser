@@ -1,4 +1,4 @@
-namespace Hl7.Core.Utils;
+namespace Hl7.Core.Common;
 
 /// <summary>
 /// HL7 element usage requirement (often shown as Usage codes: R, RE, O, C).

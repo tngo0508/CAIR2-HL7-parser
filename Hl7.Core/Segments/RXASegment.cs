@@ -1,6 +1,7 @@
 using Hl7.Core.Base;
 using Hl7.Core.Common;
 using Hl7.Core.Utils;
+using Hl7.Core.Types;
 
 namespace Hl7.Core.Segments;
 
@@ -39,7 +40,7 @@ public class RXASegment : Segment
     /// Gets or sets the Administered Code (RXA-5)
     /// </summary>
     [DataElement(5, "Administered Code", ElementUsage.Required)]
-    public string AdministeredCode { get; set; } = string.Empty;
+    public CE AdministeredCode { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Administered Amount (RXA-6)
@@ -51,7 +52,7 @@ public class RXASegment : Segment
     /// Gets or sets the Administered Units (RXA-7)
     /// </summary>
     [DataElement(7, "Administered Units", ElementUsage.RequiredButMayBeEmpty)]
-    public string AdministeredUnits { get; set; } = string.Empty;
+    public CE AdministeredUnits { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Administration Notes (RXA-9)
@@ -63,7 +64,7 @@ public class RXASegment : Segment
     /// Gets or sets the Administering Provider (RXA-10)
     /// </summary>
     [DataElement(10, "Administering Provider", ElementUsage.RequiredButMayBeEmpty)]
-    public string AdministeringProvider { get; set; } = string.Empty;
+    public XPN AdministeringProvider { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Administered at Location (RXA-11)
@@ -105,13 +106,13 @@ public class RXASegment : Segment
     /// Gets or sets the Substance Manufacturer Name (RXA-17)
     /// </summary>
     [DataElement(17, "Substance Manufacturer Name", ElementUsage.RequiredButMayBeEmpty)]
-    public string SubstanceManufacturerName { get; set; } = string.Empty;
+    public CE SubstanceManufacturerName { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Substance Refusal Reason (RXA-18)
     /// </summary>
     [DataElement(18, "Substance Refusal Reason", ElementUsage.Optional)]
-    public string SubstanceRefusalReason { get; set; } = string.Empty;
+    public CE SubstanceRefusalReason { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Indication (RXA-19)

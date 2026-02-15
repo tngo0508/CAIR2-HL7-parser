@@ -1,6 +1,7 @@
 using Hl7.Core.Base;
 using Hl7.Core.Common;
 using Hl7.Core.Utils;
+using Hl7.Core.Types;
 
 namespace Hl7.Core.Segments;
 
@@ -26,25 +27,25 @@ public class PIDSegment : Segment
     /// Gets or sets the Patient Identifier List (PID-3)
     /// </summary>
     [DataElement(3, "Patient Identifier List", ElementUsage.Optional)]
-    public string PatientIdentifierList { get; set; } = string.Empty;
+    public CX PatientIdentifierList { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Alternate Patient ID - PID (PID-4)
     /// </summary>
     [DataElement(4, "Alternate Patient ID - PID", ElementUsage.Optional)]
-    public string AlternatePatientId { get; set; } = string.Empty;
+    public CX AlternatePatientId { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Patient Name (PID-5)
     /// </summary>
     [DataElement(5, "Patient Name", ElementUsage.Optional)]
-    public string PatientName { get; set; } = string.Empty;
+    public XPN PatientName { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Mother's Maiden Name (PID-6)
     /// </summary>
     [DataElement(6, "Mother's Maiden Name", ElementUsage.Optional)]
-    public string MothersMaidenName { get; set; } = string.Empty;
+    public XPN MothersMaidenName { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Date/Time of Birth (PID-7)
@@ -62,13 +63,13 @@ public class PIDSegment : Segment
     /// Gets or sets the Race (PID-10)
     /// </summary>
     [DataElement(10, "Race", ElementUsage.Optional)]
-    public string Race { get; set; } = string.Empty;
+    public CE Race { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Patient Address (PID-11)
     /// </summary>
     [DataElement(11, "Patient Address", ElementUsage.Optional)]
-    public string PatientAddress { get; set; } = string.Empty;
+    public XAD PatientAddress { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the County Code (PID-12)
@@ -80,19 +81,19 @@ public class PIDSegment : Segment
     /// Gets or sets the Phone Number - Home (PID-13)
     /// </summary>
     [DataElement(13, "Phone Number - Home", ElementUsage.Optional)]
-    public string PhoneNumberHome { get; set; } = string.Empty;
+    public XTN PhoneNumberHome { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Phone Number - Business (PID-14)
     /// </summary>
     [DataElement(14, "Phone Number - Business", ElementUsage.Optional)]
-    public string PhoneNumberBusiness { get; set; } = string.Empty;
+    public XTN PhoneNumberBusiness { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Primary Language (PID-15)
     /// </summary>
     [DataElement(15, "Primary Language", ElementUsage.Optional)]
-    public string PrimaryLanguage { get; set; } = string.Empty;
+    public CE PrimaryLanguage { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Marital Status (PID-16)
@@ -122,7 +123,7 @@ public class PIDSegment : Segment
     /// Gets or sets the Ethnic Group (PID-22)
     /// </summary>
     [DataElement(22, "Ethnic Group", ElementUsage.Optional)]
-    public string EthnicGroup { get; set; } = string.Empty;
+    public CE EthnicGroup { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Birth Place (PID-23)

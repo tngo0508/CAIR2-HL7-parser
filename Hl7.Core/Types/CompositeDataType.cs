@@ -21,6 +21,15 @@ public class CompositeDataType
     public CompositeDataType() { }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="CompositeDataType"/> class with a value
+    /// </summary>
+    /// <param name="value">The composite field value</param>
+    public CompositeDataType(string value)
+    {
+        Parse(value, '^', '&');
+    }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="CompositeDataType"/> class by parsing a value
     /// </summary>
     /// <param name="value">The composite field value</param>
@@ -77,4 +86,16 @@ public class CompositeDataType
     /// </summary>
     /// <returns>The composite field string</returns>
     public override string ToString() => string.Join("^", Components);
+
+    /// <summary>
+    /// Implicit conversion from string to CompositeDataType
+    /// </summary>
+    public static implicit operator string(CompositeDataType composite) => composite?.ToString() ?? string.Empty;
+
+    /// <summary>
+    /// Implicit conversion from CompositeDataType to string
+    /// </summary>
+    public static implicit operator CompositeDataType(string value) => new CompositeDataType(value);
+
+    public bool Contains(string value) => ToString().Contains(value);
 }

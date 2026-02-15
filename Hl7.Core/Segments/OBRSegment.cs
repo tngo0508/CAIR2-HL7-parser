@@ -1,6 +1,7 @@
 using Hl7.Core.Base;
 using Hl7.Core.Common;
 using Hl7.Core.Utils;
+using Hl7.Core.Types;
 
 namespace Hl7.Core.Segments;
 
@@ -33,7 +34,7 @@ public class OBRSegment : Segment
     /// Gets or sets the Universal Service ID (OBR-4)
     /// </summary>
     [DataElement(4, "Universal Service ID", ElementUsage.Optional)]
-    public string UniversalServiceId { get; set; } = string.Empty;
+    public CE UniversalServiceId { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Priority (OBR-5)

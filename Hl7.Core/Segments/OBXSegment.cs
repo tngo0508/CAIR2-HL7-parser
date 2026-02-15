@@ -1,6 +1,7 @@
 using Hl7.Core.Base;
 using Hl7.Core.Common;
 using Hl7.Core.Utils;
+using Hl7.Core.Types;
 
 namespace Hl7.Core.Segments;
 
@@ -27,7 +28,7 @@ public class OBXSegment : Segment
     /// Gets or sets the Observation Identifier (OBX-3)
     /// </summary>
     [DataElement(3, "Observation Identifier", ElementUsage.Required)]
-    public string ObservationIdentifier { get; set; } = string.Empty;
+    public CE ObservationIdentifier { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Observation Sub-ID (OBX-4)

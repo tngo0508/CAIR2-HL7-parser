@@ -3,6 +3,7 @@ using Hl7.Core.Base;
 using Hl7.Core.Common;
 using Hl7.Core.Segments;
 using Hl7.Core.Utils;
+using Hl7.Core.Types;
 
 namespace Hl7.Core;
 
@@ -179,6 +180,12 @@ public class Hl7Parser
             {
                 entry.Property.SetValue(segment, rawValue);
             }
+            else if (typeof(CompositeDataType).IsAssignableFrom(entry.Property.PropertyType))
+            {
+                var composite = (CompositeDataType)Activator.CreateInstance(entry.Property.PropertyType)!;
+                composite.Parse(rawValue, _separators.ComponentSeparator, _separators.SubComponentSeparator);
+                entry.Property.SetValue(segment, composite);
+            }
         }
 
         PopulateSegmentFields(segment, fields);
@@ -194,22 +201,22 @@ public class Hl7Parser
             AdministrationSubIdCounter = UnescapeField(GetField(fields, 2)),
             DateTimeOfAdministration = UnescapeField(GetField(fields, 3)),
             DateTimeOfAdministrationEnd = UnescapeField(GetField(fields, 4)),
-            AdministeredCode = UnescapeField(GetField(fields, 5)),
+            AdministeredCode = new CE(UnescapeField(GetField(fields, 5))),
             AdministeredAmount = UnescapeField(GetField(fields, 6)),
-            AdministeredUnits = UnescapeField(GetField(fields, 7)),
+            AdministeredUnits = new CE(UnescapeField(GetField(fields, 7))),
             AdministrationNotes = UnescapeField(GetField(fields, 9)),
-            AdministeringProvider = UnescapeField(GetField(fields, 10)),
+            AdministeringProvider = new XPN(UnescapeField(GetField(fields, 10))),
             AdministeredAtLocation = UnescapeField(GetField(fields, 11)),
             AdministeredPer = UnescapeField(GetField(fields, 12)),
             AdministeredStrength = UnescapeField(GetField(fields, 13)),
             AdministeredStrengthUnits = UnescapeField(GetField(fields, 14)),
             SubstanceLotNumber = UnescapeField(GetField(fields, 15)),
             SubstanceExpirationDate = UnescapeField(GetField(fields, 16)),
-            SubstanceManufacturerName = UnescapeField(GetField(fields, 17))
+            SubstanceManufacturerName = new CE(UnescapeField(GetField(fields, 17)))
         };
 
         if (fields.Length > 17)
-            segment.SubstanceRefusalReason = UnescapeField(GetField(fields, 18));
+            segment.SubstanceRefusalReason = new CE(UnescapeField(GetField(fields, 18)));
         if (fields.Length > 18)
             segment.Indication = UnescapeField(GetField(fields, 19));
         if (fields.Length > 19)
@@ -227,7 +234,7 @@ public class Hl7Parser
             segment.SubstanceLotNumber = field12;
             segment.SubstanceExpirationDate = field13;
             if (!string.IsNullOrWhiteSpace(field15))
-                segment.SubstanceManufacturerName = field15;
+                segment.SubstanceManufacturerName = new CE(field15);
         }
         else if (string.IsNullOrWhiteSpace(segment.SubstanceLotNumber))
         {
@@ -237,7 +244,7 @@ public class Hl7Parser
                 if (string.IsNullOrWhiteSpace(segment.SubstanceExpirationDate))
                     segment.SubstanceExpirationDate = field13;
                 if (string.IsNullOrWhiteSpace(segment.SubstanceManufacturerName))
-                    segment.SubstanceManufacturerName = field15;
+                    segment.SubstanceManufacturerName = new CE(field15);
             }
         }
 

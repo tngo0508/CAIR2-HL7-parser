@@ -3,6 +3,7 @@ using Hl7.Core.CAIR2;
 using Hl7.Core.Segments;
 using Hl7.Core.Base;
 using Hl7.Core.Common;
+using Hl7.Core.Types;
 
 namespace Hl7Test;
 
@@ -74,9 +75,15 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
 
         var pid = message.GetSegment<PIDSegment>("PID");
         Assert.NotNull(pid);
-        Assert.Equal("JONES^GEORGE^M^JR", pid.PatientName);
+        Assert.Equal("JONES^GEORGE^M^JR", (string)pid.PatientName);
+        Assert.Equal("JONES", pid.PatientName.FamilyName);
+        Assert.Equal("GEORGE", pid.PatientName.GivenName);
+        Assert.Equal("M", pid.PatientName.SecondAndFurtherGivenNamesOrInitials);
+        Assert.Equal("JR", pid.PatientName.Suffix);
         Assert.Equal("20140227", pid.DateOfBirth);
-        Assert.Equal("2106-3^WHITE^HL70005", pid.Race);
+        Assert.Equal("2106-3^WHITE^HL70005", (string)pid.Race);
+        Assert.Equal("2106-3", pid.Race.Identifier);
+        Assert.Equal("WHITE", pid.Race.Text);
 
         var pd1 = message.GetSegment<PD1Segment>("PD1");
         Assert.NotNull(pd1);
@@ -84,8 +91,8 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
 
         var nk1 = message.GetSegment<NK1Segment>("NK1");
         Assert.NotNull(nk1);
-        Assert.Equal("JONES^MARTHA", nk1.Name);
-        Assert.Equal("MTH^MOTHER^HL70063", nk1.Relationship);
+        Assert.Equal("JONES^MARTHA", (string)nk1.Name);
+        Assert.Equal("MTH^MOTHER^HL70063", (string)nk1.Relationship);
 
         var rxa = message.GetSegment<RXASegment>("RXA");
         Assert.NotNull(rxa);
@@ -118,7 +125,7 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
 
         var pid = message.GetSegment<PIDSegment>("PID");
         Assert.NotNull(pid);
-        Assert.Equal("DOE^JOHN^J^JR", pid.PatientName);
+        Assert.Equal("DOE^JOHN^J^JR", (string)pid.PatientName);
         Assert.Equal("19800101", pid.DateOfBirth);
 
         var rxa = message.GetSegment<RXASegment>("RXA");
@@ -160,13 +167,13 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
         Assert.NotNull(qpd);
         Assert.Equal("Z34^Request Immunization History^CDCPHINVS", qpd.MessageQueryName);
         Assert.Equal("CA0002", qpd.QueryTag);
-        Assert.Equal("123456789^^^MR", qpd.PatientIdentifierList);
-        Assert.Equal("DOE^JOHN^J^JR", qpd.PatientName);
-        Assert.Equal("DOE^JANE", qpd.MothersMaidenName);
+        Assert.Equal("123456789^^^MR", (string)qpd.PatientIdentifierList);
+        Assert.Equal("DOE^JOHN^J^JR", (string)qpd.PatientName);
+        Assert.Equal("DOE^JANE", (string)qpd.MothersMaidenName);
         Assert.Equal("19800101", qpd.DateOfBirth);
         Assert.Equal("M", qpd.AdministrativeSex);
-        Assert.Equal("123 MAIN ST^^FRESNO^CA^93701^^H", qpd.PatientAddress);
-        Assert.Equal("^PRN^PH^^^555^1234567", qpd.PhoneNumberHome);
+        Assert.Equal("123 MAIN ST^^FRESNO^CA^93701^^H", (string)qpd.PatientAddress);
+        Assert.Equal("^PRN^PH^^^555^1234567", (string)qpd.PhoneNumberHome);
     }
 
     [Fact]
@@ -190,6 +197,6 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
 
         var pid = message.GetSegment<PIDSegment>("PID");
         Assert.NotNull(pid);
-        Assert.Equal("DOE^JOHN^J^JR", pid.PatientName);
+        Assert.Equal("DOE^JOHN^J^JR", (string)pid.PatientName);
     }
 }

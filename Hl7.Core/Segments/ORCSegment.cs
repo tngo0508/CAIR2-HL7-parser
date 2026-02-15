@@ -1,6 +1,7 @@
 using Hl7.Core.Base;
 using Hl7.Core.Common;
 using Hl7.Core.Utils;
+using Hl7.Core.Types;
 
 namespace Hl7.Core.Segments;
 
@@ -32,19 +33,19 @@ public class ORCSegment : Segment
     /// Gets or sets the person who entered the order (ORC-10)
     /// </summary>
     [DataElement(10, "Entered By", ElementUsage.RequiredButMayBeEmpty)]
-    public string EnteredBy { get; set; } = string.Empty;
+    public XPN EnteredBy { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the ordering provider (ORC-12)
     /// </summary>
     [DataElement(12, "Ordering Provider", ElementUsage.RequiredButMayBeEmpty)]
-    public string OrderingProvider { get; set; } = string.Empty;
+    public XPN OrderingProvider { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the entering organization (ORC-17)
     /// </summary>
     [DataElement(17, "Entering Organization", ElementUsage.RequiredButMayBeEmpty)]
-    public string EnteringOrganization { get; set; } = string.Empty;
+    public CE EnteringOrganization { get; set; } = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ORCSegment"/> class

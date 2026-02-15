@@ -45,7 +45,7 @@ public class Hl7v2ParserGuide
      * {
      *     Console.WriteLine($"Vaccine: {rxa.AdministeredCode}");
      *     Console.WriteLine($"Date: {rxa.DateTimeOfAdministration}");
-     *     Console.WriteLine($"Site: {rxa.AdministrationSite}");
+     *     Console.WriteLine($"Administered At: {rxa.AdministeredAtLocation}");
      * }
      * 
      * // Use CAIR2-specific parser
@@ -208,15 +208,15 @@ public class Hl7v2ParserGuide
      *   Field 7: Administered Units
      *   Field 8: Administration Notes
      *   Field 9: Administering Provider
-     *   Field 10: Administration Site
-     *   Field 11: Administration Route
-     *   Field 12: Substance Lot Number
-     *   Field 13: Substance Expiration Date
-     *   Field 14: Substance Manufacturer Name
-     *   Field 15: Substance Refusal Reason
-     *   Field 16: Indication
-     *   Field 17: Completion Status
-     *   Field 18: Action Code
+     *   Field 10: Administering Provider
+     *   Field 11: Administered-at Location
+     *   Field 15: Substance Lot Number
+     *   Field 16: Substance Expiration Date
+     *   Field 17: Substance Manufacturer Name
+     *   Field 18: Substance Refusal Reason
+     *   Field 19: Indication
+     *   Field 20: Completion Status
+     *   Field 21: Action Code
      * 
      * OBX - Observation/Result
      *   Field 1: Set ID

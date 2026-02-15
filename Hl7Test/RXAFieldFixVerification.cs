@@ -28,7 +28,7 @@ public class RXAFieldFixVerification
         Console.WriteLine($"DateTimeOfAdministration: '{rxa.DateTimeOfAdministration}' (expected: '20170101')");
         Console.WriteLine($"AdministeredCode: '{rxa.AdministeredCode}' (expected: '08^HepBPeds^CVX')");
         Console.WriteLine($"AdministeredAmount: '{rxa.AdministeredAmount}' (expected: '1.0')");
-        Console.WriteLine($"AdministrationRoute: '{rxa.AdministrationRoute}' (expected: '^^^VICTORIATEST')");
+        Console.WriteLine($"AdministeredAtLocation: '{rxa.AdministeredAtLocation}' (expected: '^^^VICTORIATEST')");
         Console.WriteLine($"SubstanceLotNumber: '{rxa.SubstanceLotNumber}' (expected: 'HBV12345')");
         Console.WriteLine($"SubstanceManufacturerName: '{rxa.SubstanceManufacturerName}' (expected: 'SKB')");
         Console.WriteLine($"CompletionStatus: '{rxa.CompletionStatus}' (expected: 'CP')");
@@ -40,7 +40,7 @@ public class RXAFieldFixVerification
         Assert.Equal("20170101", rxa.DateTimeOfAdministration);
         Assert.Equal("08^HepBPeds^CVX", rxa.AdministeredCode);
         Assert.Equal("1.0", rxa.AdministeredAmount);
-        Assert.Equal("^^^VICTORIATEST", rxa.AdministrationRoute);
+        Assert.Equal("^^^VICTORIATEST", rxa.AdministeredAtLocation);
         Assert.Equal("HBV12345", rxa.SubstanceLotNumber);  // ✅ THIS WAS FAILING
         Assert.Equal("SKB", rxa.SubstanceManufacturerName);
         Assert.Equal("CP", rxa.CompletionStatus);
@@ -59,8 +59,8 @@ public class RXAFieldFixVerification
         }
         
         // Verify HBV12345 is at correct position
-        Assert.Equal("HBV12345", fields[14]);
-        Assert.Equal("SKB", fields[16]);
+        Assert.Equal("HBV12345", fields[15]);
+        Assert.Equal("SKB", fields[17]);
         Assert.Equal("CP", fields[20]);
     }
 

@@ -74,24 +74,26 @@ public class Hl7Parser
         var mshSegment = new MSHSegment
         {
             SegmentId = "MSH",
-            EncodingCharacters = _separators.ComponentSeparator.ToString() +
-                                _separators.RepetitionSeparator.ToString() +
-                                _separators.EscapeCharacter.ToString() +
-                                _separators.SubComponentSeparator.ToString(),
-            SendingApplication = GetField(fields, 2),      // MSH-3 (array index 2)
-            SendingFacility = GetField(fields, 3),         // MSH-4 (array index 3)
-            ReceivingApplication = GetField(fields, 4),    // MSH-5 (array index 4)
-            ReceivingFacility = GetField(fields, 5),       // MSH-6 (array index 5)
-            MessageDateTime = GetField(fields, 6),         // MSH-7 (array index 6)
-            Security = GetField(fields, 7),                // MSH-8 (array index 7)
-            MessageType = GetField(fields, 8),             // MSH-9 (array index 8)
-            MessageControlId = GetField(fields, 9),        // MSH-10 (array index 9)
-            ProcessingId = GetField(fields, 10),           // MSH-11 (array index 10)
-            VersionId = GetField(fields, 11),              // MSH-12 (array index 11)
-            MessageProfileId = GetField(fields, 12),       // MSH-13 (array index 12)
-            CountryCode = GetField(fields, 13),            // MSH-14 (array index 13)
-            CharacterSet = GetField(fields, 14),           // MSH-15 (array index 14)
-            PrincipalLanguageOfMessage = GetField(fields, 15)  // MSH-16 (array index 15)
+            EncodingCharacters = GetField(fields, 1),                // MSH-2
+            SendingApplication = GetField(fields, 2),                // MSH-3
+            SendingFacility = GetField(fields, 3),                   // MSH-4
+            ReceivingApplication = GetField(fields, 4),              // MSH-5
+            ReceivingFacility = GetField(fields, 5),                 // MSH-6
+            MessageDateTime = GetField(fields, 6),                   // MSH-7
+            Security = GetField(fields, 7),                          // MSH-8
+            MessageType = GetField(fields, 8),                       // MSH-9
+            MessageControlId = GetField(fields, 9),                  // MSH-10
+            ProcessingId = GetField(fields, 10),                     // MSH-11
+            VersionId = GetField(fields, 11),                        // MSH-12
+            SequenceNumber = GetField(fields, 12),                   // MSH-13
+            ContinuationPointer = GetField(fields, 13),              // MSH-14
+            AcceptAcknowledgmentType = GetField(fields, 14),         // MSH-15
+            ApplicationAcknowledgmentType = GetField(fields, 15),    // MSH-16
+            CountryCode = GetField(fields, 16),                      // MSH-17
+            CharacterSet = GetField(fields, 17),                     // MSH-18
+            PrincipalLanguageOfMessage = GetField(fields, 18),       // MSH-19
+            AlternateCharacterSetHandlingScheme = GetField(fields, 19), // MSH-20
+            MessageProfileIdentifier = GetField(fields, 20)          // MSH-21
         };
 
         mshSegment.Fields = new Dictionary<int, string>();
@@ -127,6 +129,15 @@ public class Hl7Parser
             "OBR" => ParseOBRSegment(fields),
             "OBX" => ParseOBXSegment(fields),
             "RXA" => ParseRXASegment(fields),
+            "RXR" => ParseRXRSegment(fields),
+            "ORC" => ParseORCSegment(fields),
+            "PD1" => ParsePD1Segment(fields),
+            "NK1" => ParseNK1Segment(fields),
+            "QPD" => ParseQPDSegment(fields),
+            "RCP" => ParseRCPSegment(fields),
+            "QAK" => ParseQAKSegment(fields),
+            "MSA" => ParseMSASegment(fields),
+            "ERR" => ParseERRSegment(fields),
             _ => ParseGenericSegment(segmentId, fields)
         };
     }
@@ -226,16 +237,15 @@ public class Hl7Parser
             AdministeredCode = UnescapeField(GetField(fields, 5)),
             AdministeredAmount = UnescapeField(GetField(fields, 6)),
             AdministeredUnits = UnescapeField(GetField(fields, 7)),
-            AdministrationNotes = UnescapeField(GetField(fields, 8)),
-            AdministeringProvider = UnescapeField(GetField(fields, 9)),
-            AdministrationSite = UnescapeField(GetField(fields, 10)),
-            AdministrationRoute = UnescapeField(GetField(fields, 11)),
-            AdministeredStrength = UnescapeField(GetField(fields, 12)),
-            AdministeredStrengthUnits = UnescapeField(GetField(fields, 13)),
-            // CAIR2 has an extra field at [14], so Lot Number is at [15]
-            SubstanceLotNumber = UnescapeField(GetField(fields, 15)),      // ✅ CORRECT: HBV12345
+            AdministrationNotes = UnescapeField(GetField(fields, 9)),
+            AdministeringProvider = UnescapeField(GetField(fields, 10)),
+            AdministeredAtLocation = UnescapeField(GetField(fields, 11)),
+            AdministeredPer = UnescapeField(GetField(fields, 12)),
+            AdministeredStrength = UnescapeField(GetField(fields, 13)),
+            AdministeredStrengthUnits = UnescapeField(GetField(fields, 14)),
+            SubstanceLotNumber = UnescapeField(GetField(fields, 15)),
             SubstanceExpirationDate = UnescapeField(GetField(fields, 16)),
-            SubstanceManufacturerName = UnescapeField(GetField(fields, 17)) // ✅ CORRECT: SKB
+            SubstanceManufacturerName = UnescapeField(GetField(fields, 17))
         };
 
         if (fields.Length > 17)
@@ -243,11 +253,191 @@ public class Hl7Parser
         if (fields.Length > 18)
             segment.Indication = UnescapeField(GetField(fields, 19));
         if (fields.Length > 19)
-            segment.RxnAdministrationNotes = UnescapeField(GetField(fields, 20));
+            segment.CompletionStatus = UnescapeField(GetField(fields, 20));
         if (fields.Length > 20)
-            segment.CompletionStatus = UnescapeField(GetField(fields, 20));  // ✅ CORRECT: CP at position 20
-        if (fields.Length > 21)
             segment.ActionCode = UnescapeField(GetField(fields, 21));
+
+        var field12 = UnescapeField(GetField(fields, 12));
+        var field13 = UnescapeField(GetField(fields, 13));
+        var field14 = UnescapeField(GetField(fields, 14));
+        var field15 = UnescapeField(GetField(fields, 15));
+
+        if (!string.IsNullOrWhiteSpace(field12) && LooksLikeDate(field13) && string.IsNullOrWhiteSpace(field14))
+        {
+            segment.SubstanceLotNumber = field12;
+            segment.SubstanceExpirationDate = field13;
+            if (!string.IsNullOrWhiteSpace(field15))
+                segment.SubstanceManufacturerName = field15;
+        }
+        else if (string.IsNullOrWhiteSpace(segment.SubstanceLotNumber))
+        {
+            if (!string.IsNullOrWhiteSpace(field12))
+            {
+                segment.SubstanceLotNumber = field12;
+                if (string.IsNullOrWhiteSpace(segment.SubstanceExpirationDate))
+                    segment.SubstanceExpirationDate = field13;
+                if (string.IsNullOrWhiteSpace(segment.SubstanceManufacturerName))
+                    segment.SubstanceManufacturerName = field15;
+            }
+        }
+
+        PopulateSegmentFields(segment, fields);
+        return segment;
+    }
+
+    private static bool LooksLikeDate(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        if (value.Length != 8 && value.Length != 14)
+            return false;
+
+        foreach (var ch in value)
+        {
+            if (!char.IsDigit(ch))
+                return false;
+        }
+
+        return true;
+    }
+
+    private RXRSegment ParseRXRSegment(string[] fields)
+    {
+        var segment = new RXRSegment
+        {
+            SegmentId = "RXR",
+            Route = UnescapeField(GetField(fields, 1)),
+            AdministrationSite = UnescapeField(GetField(fields, 2))
+        };
+
+        PopulateSegmentFields(segment, fields);
+        return segment;
+    }
+
+    private ORCSegment ParseORCSegment(string[] fields)
+    {
+        var segment = new ORCSegment
+        {
+            SegmentId = "ORC",
+            OrderControl = UnescapeField(GetField(fields, 1)),
+            PlacerOrderNumber = UnescapeField(GetField(fields, 2)),
+            FillerOrderNumber = UnescapeField(GetField(fields, 3)),
+            EnteredBy = UnescapeField(GetField(fields, 10)),
+            OrderingProvider = UnescapeField(GetField(fields, 12)),
+            EnteringOrganization = UnescapeField(GetField(fields, 17))
+        };
+
+        PopulateSegmentFields(segment, fields);
+        return segment;
+    }
+
+    private PD1Segment ParsePD1Segment(string[] fields)
+    {
+        var segment = new PD1Segment
+        {
+            SegmentId = "PD1",
+            PublicityCode = UnescapeField(GetField(fields, 11)),
+            ProtectionIndicator = UnescapeField(GetField(fields, 12)),
+            ProtectionIndicatorEffectiveDate = UnescapeField(GetField(fields, 13)),
+            ImmunizationRegistryStatus = UnescapeField(GetField(fields, 16)),
+            ImmunizationRegistryStatusEffectiveDate = UnescapeField(GetField(fields, 17))
+        };
+
+        PopulateSegmentFields(segment, fields);
+        return segment;
+    }
+
+    private NK1Segment ParseNK1Segment(string[] fields)
+    {
+        var segment = new NK1Segment
+        {
+            SegmentId = "NK1",
+            SetId = ParseInt(UnescapeField(GetField(fields, 1))),
+            Name = UnescapeField(GetField(fields, 2)),
+            Relationship = UnescapeField(GetField(fields, 3)),
+            Address = UnescapeField(GetField(fields, 4)),
+            PhoneNumber = UnescapeField(GetField(fields, 5))
+        };
+
+        PopulateSegmentFields(segment, fields);
+        return segment;
+    }
+
+    private QPDSegment ParseQPDSegment(string[] fields)
+    {
+        var segment = new QPDSegment
+        {
+            SegmentId = "QPD",
+            MessageQueryName = UnescapeField(GetField(fields, 1)),
+            QueryTag = UnescapeField(GetField(fields, 2)),
+            PatientIdentifierList = UnescapeField(GetField(fields, 3)),
+            PatientName = UnescapeField(GetField(fields, 4)),
+            MothersMaidenName = UnescapeField(GetField(fields, 5)),
+            DateOfBirth = UnescapeField(GetField(fields, 6)),
+            AdministrativeSex = UnescapeField(GetField(fields, 7)),
+            PatientAddress = UnescapeField(GetField(fields, 8)),
+            PhoneNumberHome = UnescapeField(GetField(fields, 9)),
+            MultipleBirthIndicator = UnescapeField(GetField(fields, 10)),
+            BirthOrder = UnescapeField(GetField(fields, 11))
+        };
+
+        PopulateSegmentFields(segment, fields);
+        return segment;
+    }
+
+    private RCPSegment ParseRCPSegment(string[] fields)
+    {
+        var segment = new RCPSegment
+        {
+            SegmentId = "RCP",
+            QueryPriority = UnescapeField(GetField(fields, 1)),
+            QuantityLimitedRequest = UnescapeField(GetField(fields, 2)),
+            ResponseModality = UnescapeField(GetField(fields, 3))
+        };
+
+        PopulateSegmentFields(segment, fields);
+        return segment;
+    }
+
+    private QAKSegment ParseQAKSegment(string[] fields)
+    {
+        var segment = new QAKSegment
+        {
+            SegmentId = "QAK",
+            QueryTag = UnescapeField(GetField(fields, 1)),
+            QueryResponseStatus = UnescapeField(GetField(fields, 2)),
+            MessageQueryName = UnescapeField(GetField(fields, 3))
+        };
+
+        PopulateSegmentFields(segment, fields);
+        return segment;
+    }
+
+    private MSASegment ParseMSASegment(string[] fields)
+    {
+        var segment = new MSASegment
+        {
+            SegmentId = "MSA",
+            AcknowledgmentCode = UnescapeField(GetField(fields, 1)),
+            MessageControlId = UnescapeField(GetField(fields, 2)),
+            TextMessage = UnescapeField(GetField(fields, 3))
+        };
+
+        PopulateSegmentFields(segment, fields);
+        return segment;
+    }
+
+    private ERRSegment ParseERRSegment(string[] fields)
+    {
+        var segment = new ERRSegment
+        {
+            SegmentId = "ERR",
+            ErrorCodeAndLocation = UnescapeField(GetField(fields, 1)),
+            ErrorLocation = UnescapeField(GetField(fields, 2)),
+            Hl7ErrorCode = UnescapeField(GetField(fields, 3)),
+            Severity = UnescapeField(GetField(fields, 4))
+        };
 
         PopulateSegmentFields(segment, fields);
         return segment;

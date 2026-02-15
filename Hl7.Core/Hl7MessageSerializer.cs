@@ -47,28 +47,47 @@ public class Hl7MessageSerializer
         if (segment == null)
             throw new ArgumentNullException(nameof(segment));
 
-        var fields = new List<string> { segment.SegmentId };
-
-        if (segment is MSHSegment mshSegment)
-        {
-            fields.Add(_separators.ComponentSeparator.ToString() +
-                      _separators.RepetitionSeparator.ToString() +
-                      _separators.EscapeCharacter.ToString() +
-                      _separators.SubComponentSeparator.ToString());
-        }
-
         // Get all properties with DataElement attribute
         var properties = segment.GetType()
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.GetCustomAttribute<DataElementAttribute>() != null)
-            .OrderBy(p => p.GetCustomAttribute<DataElementAttribute>()!.Position)
+            .Select(p => new
+            {
+                Property = p,
+                Attribute = p.GetCustomAttribute<DataElementAttribute>()!
+            })
             .ToList();
 
-        foreach (var property in properties)
+        if (properties.Count == 0)
+            return segment.SegmentId;
+
+        var maxPosition = properties.Max(p => p.Attribute.Position);
+        var fieldCount = segment is MSHSegment ? Math.Max(0, maxPosition - 1) : maxPosition;
+
+        var fields = new List<string>(new string[fieldCount + 1]);
+        fields[0] = segment.SegmentId;
+
+        foreach (var entry in properties)
         {
-            var value = property.GetValue(segment);
+            var position = entry.Attribute.Position;
+            var index = segment is MSHSegment ? position - 1 : position;
+            if (index <= 0 || index >= fields.Count)
+                continue;
+
+            var value = entry.Property.GetValue(segment);
             var fieldValue = value == null ? string.Empty : value.ToString() ?? string.Empty;
-            fields.Add(EscapeFieldValue(fieldValue));
+
+            if (segment is MSHSegment &&
+                entry.Property.Name == nameof(MSHSegment.EncodingCharacters) &&
+                string.IsNullOrEmpty(fieldValue))
+            {
+                fieldValue = _separators.ComponentSeparator.ToString() +
+                             _separators.RepetitionSeparator.ToString() +
+                             _separators.EscapeCharacter.ToString() +
+                             _separators.SubComponentSeparator.ToString();
+            }
+
+            fields[index] = EscapeFieldValue(fieldValue);
         }
 
         // Remove trailing empty fields

@@ -45,10 +45,10 @@ public class RXAFinalVerification
         Console.WriteLine($"  Actual:   {rxa.AdministeredAmount}");
         Assert.Equal("1.0", rxa.AdministeredAmount);
         
-        Console.WriteLine("\nPosition 11 (AdministrationRoute):");
+        Console.WriteLine("\nPosition 11 (AdministeredAtLocation):");
         Console.WriteLine($"  Expected: ^^^VICTORIATEST");
-        Console.WriteLine($"  Actual:   {rxa.AdministrationRoute}");
-        Assert.Equal("^^^VICTORIATEST", rxa.AdministrationRoute);
+        Console.WriteLine($"  Actual:   {rxa.AdministeredAtLocation}");
+        Assert.Equal("^^^VICTORIATEST", rxa.AdministeredAtLocation);
         
         Console.WriteLine("\n=== CRITICAL FIELDS ===\n");
         

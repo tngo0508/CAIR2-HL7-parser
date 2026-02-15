@@ -9,9 +9,18 @@ A comprehensive .NET HL7v2 (Health Level 7 version 2) message parser specificall
 - **Segment Support**:
   - **MSH** (Message Header): Message metadata and separators
   - **PID** (Patient Identification): Patient demographic information
+  - **PD1** (Patient Additional Demographics)
+  - **NK1** (Next of Kin)
   - **RXA** (Pharmacy/Vaccine Administration): Vaccination administration details
+  - **RXR** (Pharmacy/Treatment Route)
   - **OBX** (Observation/Result): Lab results and observations
   - **OBR** (Observation Request): Order information
+  - **ORC** (Common Order)
+  - **QPD** (Query Parameter Definition)
+  - **QAK** (Query Acknowledgment)
+  - **RCP** (Response Control Parameters)
+  - **MSA** (Message Acknowledgment)
+  - **ERR** (Error)
   - Generic segment support for other segment types
 
 - **Advanced Features**:
@@ -59,7 +68,7 @@ foreach (var rxa in rxaSegments)
 {
     Console.WriteLine($"Vaccine: {rxa.AdministeredCode}");
     Console.WriteLine($"Date: {rxa.DateTimeOfAdministration}");
-    Console.WriteLine($"Site: {rxa.AdministrationSite}");
+    Console.WriteLine($"Administered At: {rxa.AdministeredAtLocation}");
 }
 ```
 
@@ -88,6 +97,36 @@ if (cair2Parser.ValidateCAIR2Message(message))
         Console.WriteLine($"Lot: {record.LotNumber}");
     }
 }
+```
+
+### CAIR2 Bidirectional (QBP/RSP)
+
+```csharp
+using Hl7.Core.CAIR2;
+
+var exchange = new Cair2BidirectionalExchange();
+
+var query = exchange.BuildQbpMessage(
+    Cair2QueryProfile.Z44,
+    new Cair2QueryParameters
+    {
+        SendingApplication = "MYAPP",
+        SendingFacility = "MYSENDER",
+        ReceivingApplication = "CAIR IIS",
+        ReceivingFacility = "DE000001",
+        MessageControlId = "MSG123",
+        QueryTag = "Q0001",
+        PatientName = "DOE^JANE",
+        DateOfBirth = "20190101",
+        AdministrativeSex = "F",
+        PatientAddress = "123 MAIN ST^^SACRAMENTO^CA^95814"
+    });
+
+// Serialize with Hl7MessageSerializer
+
+// Parse an RSP response
+var response = exchange.ParseRspMessage(hl7ResponseString);
+Console.WriteLine(response.QueryResponseStatus);
 ```
 
 ### Parsing Individual Segments
@@ -246,11 +285,11 @@ RXA-1:  Give Sub-ID Counter
 RXA-3:  Date/Time of Administration
 RXA-5:  Administered Code
 RXA-6:  Administered Amount
-RXA-10: Administration Site
-RXA-11: Administration Route
-RXA-12: Substance Lot Number
-RXA-13: Substance Expiration Date
-RXA-14: Substance Manufacturer
+RXA-10: Administering Provider
+RXA-11: Administered-at Location
+RXA-15: Substance Lot Number
+RXA-16: Substance Expiration Date
+RXA-17: Substance Manufacturer
 ```
 
 #### OBX - Observation/Result

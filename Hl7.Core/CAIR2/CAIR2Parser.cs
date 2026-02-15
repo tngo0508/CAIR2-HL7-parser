@@ -60,6 +60,8 @@ public class CAIR2Parser
 
         foreach (var rxa in rxaSegments)
         {
+            var rxr = FindRXRForRXA(message, rxa);
+
             records.Add(new VaccinationRecord
             {
                 PatientId = pidSegment.PatientId,
@@ -67,8 +69,9 @@ public class CAIR2Parser
                 DateOfBirth = pidSegment.DateOfBirth,
                 VaccineCode = rxa.AdministeredCode,
                 AdministrationDate = rxa.DateTimeOfAdministration,
-                AdministrationSite = rxa.AdministrationSite,
-                AdministrationRoute = rxa.AdministrationRoute,
+                AdministeredAtLocation = rxa.AdministeredAtLocation,
+                AdministrationRoute = rxr?.Route ?? string.Empty,
+                AdministrationSite = rxr?.AdministrationSite ?? string.Empty,
                 LotNumber = rxa.SubstanceLotNumber,
                 ExpirationDate = rxa.SubstanceExpirationDate,
                 ManufacturerName = rxa.SubstanceManufacturerName,
@@ -79,6 +82,24 @@ public class CAIR2Parser
         }
 
         return records;
+    }
+
+    private RXRSegment? FindRXRForRXA(Hl7Message message, RXASegment rxa)
+    {
+        var rxaIndex = message.Segments.IndexOf(rxa);
+        if (rxaIndex < 0)
+            return null;
+
+        for (int i = rxaIndex + 1; i < message.Segments.Count; i++)
+        {
+            if (message.Segments[i] is RXASegment)
+                break;
+
+            if (message.Segments[i] is RXRSegment rxrSegment)
+                return rxrSegment;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -137,6 +158,7 @@ public class VaccinationRecord
     public string DateOfBirth { get; set; } = string.Empty;
     public string VaccineCode { get; set; } = string.Empty;
     public string AdministrationDate { get; set; } = string.Empty;
+    public string AdministeredAtLocation { get; set; } = string.Empty;
     public string AdministrationSite { get; set; } = string.Empty;
     public string AdministrationRoute { get; set; } = string.Empty;
     public string LotNumber { get; set; } = string.Empty;

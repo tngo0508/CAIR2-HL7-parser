@@ -263,17 +263,22 @@ OBX|49|CE|30982-3^Reason applied by forecast logic to project this vaccine^LN|8|
 
         // Act
         var rxaSegments = message.GetSegments<RXASegment>("RXA");
+        var rxrSegments = message.GetSegments<RXRSegment>("RXR");
 
         // Assert & Display
         Console.WriteLine("\n=== ADMINISTERED VACCINATIONS ===");
-        foreach (var rxa in rxaSegments)
+        for (int i = 0; i < rxaSegments.Count; i++)
         {
+            var rxa = rxaSegments[i];
+            var rxr = i < rxrSegments.Count ? rxrSegments[i] : null;
+
             Console.WriteLine($"Date: {rxa.DateTimeOfAdministration}");
             Console.WriteLine($"Vaccine: {rxa.AdministeredCode}");
             Console.WriteLine($"Amount: {rxa.AdministeredAmount} {rxa.AdministeredUnits}");
             Console.WriteLine($"Lot Number: {rxa.SubstanceLotNumber}");
-            Console.WriteLine($"Route: {rxa.AdministrationRoute}");
-            Console.WriteLine($"Site: {rxa.AdministrationSite}");
+            Console.WriteLine($"Administered At: {rxa.AdministeredAtLocation}");
+            Console.WriteLine($"Route: {rxr?.Route ?? string.Empty}");
+            Console.WriteLine($"Site: {rxr?.AdministrationSite ?? string.Empty}");
             Console.WriteLine($"Status: {rxa.CompletionStatus}");
             Console.WriteLine("---");
         }

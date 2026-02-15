@@ -46,6 +46,7 @@ public class PIDFieldDiagnostic
         
         var pid = parser.ParseSegment(pidLine) as PIDSegment;
         
+        Assert.NotNull(pid);
         Console.WriteLine("\n=== CURRENT PARSER OUTPUT ===");
         Console.WriteLine($"PatientIdentifierList: '{pid.PatientIdentifierList}' (expected: '291235^^^ORA^SR')");
         Console.WriteLine($"PatientName: '{pid.PatientName}' (expected: 'WALL^MIKE')");

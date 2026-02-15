@@ -16,10 +16,25 @@ public class Hl7MessageValidator
     /// </summary>
     public class ValidationResult
     {
+        /// <summary>
+        /// Gets or sets a value indicating whether the message is valid
+        /// </summary>
         public bool IsValid { get; set; }
+
+        /// <summary>
+        /// Gets or sets the list of validation errors
+        /// </summary>
         public List<string> Errors { get; set; } = [];
+
+        /// <summary>
+        /// Gets or sets the list of validation warnings
+        /// </summary>
         public List<string> Warnings { get; set; } = [];
 
+        /// <summary>
+        /// Returns a string representation of the validation result
+        /// </summary>
+        /// <returns>A formatted string with errors and warnings</returns>
         public override string ToString()
         {
             var result = new System.Text.StringBuilder();

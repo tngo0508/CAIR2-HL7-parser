@@ -4,24 +4,45 @@ using Hl7.Core.Utils;
 
 namespace Hl7.Core.Segments;
 
+/// <summary>
+/// NK1 - Next of Kin Segment
+/// </summary>
 [Segment("NK1")]
 public class NK1Segment : Segment
 {
+    /// <summary>
+    /// Gets or sets the Set ID - NK1 (NK1-1)
+    /// </summary>
     [DataElement(1, "Set ID - NK1", ElementUsage.Optional)]
     public int SetId { get; set; }
 
+    /// <summary>
+    /// Gets or sets the Name (NK1-2)
+    /// </summary>
     [DataElement(2, "Name", ElementUsage.Optional)]
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the Relationship (NK1-3)
+    /// </summary>
     [DataElement(3, "Relationship", ElementUsage.Optional)]
     public string Relationship { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the Address (NK1-4)
+    /// </summary>
     [DataElement(4, "Address", ElementUsage.Optional)]
     public string Address { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the Phone Number (NK1-5)
+    /// </summary>
     [DataElement(5, "Phone Number", ElementUsage.Optional)]
     public string PhoneNumber { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NK1Segment"/> class
+    /// </summary>
     public NK1Segment() : base("NK1")
     {
     }

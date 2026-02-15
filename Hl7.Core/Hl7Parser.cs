@@ -6,11 +6,17 @@ using Hl7.Core.Utils;
 
 namespace Hl7.Core;
 
+/// <summary>
+/// Parses and manipulates HL7 messages
+/// </summary>
 public class Hl7Parser
 {
     private Hl7Separators _separators = new();
     private const string DefaultFieldSeparator = "|";
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Hl7Parser"/> class
+    /// </summary>
     public Hl7Parser()
     {
         // Initialize with default separators

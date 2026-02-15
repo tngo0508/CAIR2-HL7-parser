@@ -366,6 +366,7 @@ OBX|49|CE|30982-3^Reason applied by forecast logic to project this vaccine^LN|8|
         var serializer = new Hl7.Core.Hl7MessageSerializer(separators);
 
         // Act - Serialize first segment
+        Assert.NotNull(msh);
         var serializedMsh = serializer.SerializeSegment(msh);
 
         // Assert

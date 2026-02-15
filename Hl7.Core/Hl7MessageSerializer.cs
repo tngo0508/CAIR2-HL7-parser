@@ -13,6 +13,10 @@ public class Hl7MessageSerializer
 {
     private readonly Hl7Separators _separators;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Hl7MessageSerializer"/> class
+    /// </summary>
+    /// <param name="separators">The separators to use during serialization</param>
     public Hl7MessageSerializer(Hl7Separators separators)
     {
         _separators = separators ?? throw new ArgumentNullException(nameof(separators));

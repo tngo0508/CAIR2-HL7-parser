@@ -11,6 +11,11 @@ public class CAIR2Parser
     private readonly Hl7Parser _baseParser = new();
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="CAIR2Parser"/> class
+    /// </summary>
+    public CAIR2Parser() { }
+
+    /// <summary>
     /// Parses a complete CAIR2 vaccination message
     /// </summary>
     public Hl7Message ParseVaccinationMessage(string hl7Message)
@@ -153,19 +158,74 @@ public class CAIR2Parser
 /// </summary>
 public class VaccinationRecord
 {
+    /// <summary>
+    /// Gets or sets the patient identifier
+    /// </summary>
     public string PatientId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the patient name
+    /// </summary>
     public string PatientName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the patient's date of birth
+    /// </summary>
     public string DateOfBirth { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the vaccine code
+    /// </summary>
     public string VaccineCode { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the administration date
+    /// </summary>
     public string AdministrationDate { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the location where the vaccine was administered
+    /// </summary>
     public string AdministeredAtLocation { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the administration site
+    /// </summary>
     public string AdministrationSite { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the administration route
+    /// </summary>
     public string AdministrationRoute { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the substance lot number
+    /// </summary>
     public string LotNumber { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the substance expiration date
+    /// </summary>
     public string ExpirationDate { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the substance manufacturer name
+    /// </summary>
     public string ManufacturerName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the administering provider
+    /// </summary>
     public string AdministeringProvider { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the completion status
+    /// </summary>
     public string CompletionStatus { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the action code
+    /// </summary>
     public string ActionCode { get; set; } = string.Empty;
 }
 
@@ -174,13 +234,44 @@ public class VaccinationRecord
 /// </summary>
 public class PatientInfo
 {
+    /// <summary>
+    /// Gets or sets the patient identifier
+    /// </summary>
     public string PatientId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the patient name
+    /// </summary>
     public string PatientName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the patient's date of birth
+    /// </summary>
     public string DateOfBirth { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the patient's sex
+    /// </summary>
     public string AdministrativeSex { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the patient's race
+    /// </summary>
     public string Race { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the patient's address
+    /// </summary>
     public string PatientAddress { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the patient's home phone number
+    /// </summary>
     public string PhoneNumberHome { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the patient's primary language
+    /// </summary>
     public string PrimaryLanguage { get; set; } = string.Empty;
 }
 
@@ -189,13 +280,48 @@ public class PatientInfo
 /// </summary>
 public class MessageMetadata
 {
+    /// <summary>
+    /// Gets or sets the sending application
+    /// </summary>
     public string SendingApplication { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the sending facility
+    /// </summary>
     public string SendingFacility { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the receiving application
+    /// </summary>
     public string ReceivingApplication { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the receiving facility
+    /// </summary>
     public string ReceivingFacility { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the date and time of the message
+    /// </summary>
     public string MessageDateTime { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the message type
+    /// </summary>
     public string MessageType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the message control identifier
+    /// </summary>
     public string MessageControlId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the processing identifier
+    /// </summary>
     public string ProcessingId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the version identifier
+    /// </summary>
     public string VersionId { get; set; } = string.Empty;
 }

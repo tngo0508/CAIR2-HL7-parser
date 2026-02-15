@@ -82,6 +82,7 @@ public class UltraSimpleTest
         
         var pid = parser.ParseSegment(pidLine) as PIDSegment;
         
+        Assert.NotNull(pid);
         Console.WriteLine("\n=== PARSER OUTPUT ===");
         Console.WriteLine($"SegmentId: '{pid.SegmentId}'");
         Console.WriteLine($"SetId: {pid.SetId}");

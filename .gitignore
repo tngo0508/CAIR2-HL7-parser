@@ -3,3 +3,30 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+
+# Visual Studio
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# Rider
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store

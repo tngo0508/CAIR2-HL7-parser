@@ -28,4 +28,55 @@ public class Segment
     {
         SegmentId = segmentId;
     }
+
+    /// <summary>
+    /// Gets the raw value of a field at the specified position
+    /// </summary>
+    /// <param name="position">The 1-based position of the field</param>
+    /// <returns>The field value, or an empty string if not found</returns>
+    public string GetField(int position)
+    {
+        return Fields.TryGetValue(position, out var value) ? value : string.Empty;
+    }
+
+    /// <summary>
+    /// Gets the value of a field at the specified position, converted to the specified type
+    /// </summary>
+    /// <typeparam name="T">The type to convert to</typeparam>
+    /// <param name="position">The 1-based position of the field</param>
+    /// <returns>The converted value, or the default value for the type if conversion fails</returns>
+    public T? GetElement<T>(int position)
+    {
+        var value = GetField(position);
+        if (string.IsNullOrEmpty(value)) return default;
+
+        try
+        {
+            if (typeof(T) == typeof(string))
+            {
+                return (T)(object)value;
+            }
+
+            if (typeof(T) == typeof(int))
+            {
+                return int.TryParse(value, out var result) ? (T)(object)result : default;
+            }
+
+            if (typeof(T) == typeof(decimal))
+            {
+                return decimal.TryParse(value, out var result) ? (T)(object)result : default;
+            }
+
+            if (typeof(T) == typeof(DateTime))
+            {
+                return DateTime.TryParse(value, out var result) ? (T)(object)result : default;
+            }
+
+            return (T)Convert.ChangeType(value, typeof(T));
+        }
+        catch
+        {
+            return default;
+        }
+    }
 }

@@ -261,10 +261,7 @@ public class Hl7Parser
     private Segment ParseGenericSegment(string segmentId, string[] fields)
     {
         var segment = new Segment(segmentId);
-        for (int i = 1; i < fields.Length; i++)
-        {
-            segment.Fields[i - 1] = UnescapeField(fields[i]);
-        }
+        PopulateSegmentFields(segment, fields);
         return segment;
     }
 

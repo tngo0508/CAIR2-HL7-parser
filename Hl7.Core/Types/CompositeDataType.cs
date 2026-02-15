@@ -97,5 +97,10 @@ public class CompositeDataType
     /// </summary>
     public static implicit operator CompositeDataType(string value) => new CompositeDataType(value);
 
+    /// <summary>
+    /// Checks if the composite data type contains the specified value
+    /// </summary>
+    /// <param name="value">The value to search for</param>
+    /// <returns>True if the value is found; otherwise, false</returns>
     public bool Contains(string value) => ToString().Contains(value);
 }

@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -49,26 +51,49 @@
             position: relative;
         }
         .app-footer {
-            background-color: #faf9f8;
-            color: #605e5c;
-            padding: 0 20px;
-            height: 36px;
+            background-color: #ffffff;
+            color: #323130;
+            padding: 0 24px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             border-top: 1px solid #edebe9;
-            font-size: 12px;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+            font-size: 13px;
             z-index: 1000;
             flex-shrink: 0;
         }
         .app-footer a {
-            color: #0078d4;
+            color: #605e5c;
             text-decoration: none;
             display: flex;
             align-items: center;
+            padding: 6px 12px;
+            border-radius: 4px;
+            transition: all 0.2s ease-in-out;
+            font-weight: 400;
         }
         .app-footer a:hover {
-            text-decoration: underline;
+            color: #0078d4;
+            background-color: #f3f2f1;
+            text-decoration: none;
+        }
+        .app-footer a i, .app-footer a svg {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+        .footer-divider {
+            height: 16px;
+            width: 1px;
+            background-color: #edebe9;
+            margin: 0 12px;
+            display: inline-block;
+        }
+        .footer-version {
+            color: #a19f9d;
+            font-size: 11px;
+            margin-left: 8px;
         }
     </style>
 </head>
@@ -77,25 +102,44 @@
         <header class="app-header">
             <a asp-area="" asp-controller="Home" asp-action="Index">
                 <i class="ms-Icon ms-Icon--Health" style="margin-right: 8px;"></i>
-                CAIR2 HL7 Viewer
+                @Configuration["AppSettings:AppName"]
             </a>
         </header>
         <main role="main" class="app-main">
             @RenderBody()
         </main>
         <footer class="app-footer">
-            <div>
-                &copy; @DateTime.Now.Year - CAIR2 HL7 Viewer
+            <div class="d-flex align-items-center">
+                <span class="fw-semibold">@Configuration["AppSettings:AppName"]</span>
+                <span class="footer-version">v@(Configuration["AppSettings:Version"])</span>
+                @if (!Env.IsProduction())
+                {
+                    <span class="ms-2 badge @(Env.IsDevelopment() ? "bg-warning text-dark" : "bg-info")" style="font-size: 10px; font-weight: normal; padding: 2px 6px;">@Env.EnvironmentName</span>
+                }
+                <div class="footer-divider d-none d-sm-inline-block"></div>
+                <span class="text-muted d-none d-sm-inline" style="font-size: 11px;">&copy; @DateTime.Now.Year | .NET 10</span>
             </div>
-            <div class="d-flex gap-3">
+            <div class="d-flex gap-1">
+                <a href="https://cairweb.org/" target="_blank" rel="noopener noreferrer" class="d-none d-md-flex">
+                    <i class="ms-Icon ms-Icon--KnowledgeArticle"></i> CAIR2 Guide
+                </a>
+                <a href="https://www.cdph.ca.gov/Programs/CID/DCDC/CAIR/Pages/CAIR-DX-Resources.aspx" target="_blank" rel="noopener noreferrer" class="d-none d-lg-flex">
+                    <i class="ms-Icon ms-Icon--Globe"></i> DX Resources
+                </a>
+                <a href="https://www.cdc.gov/iis/technical-guidance/hl7.html" target="_blank" rel="noopener noreferrer" class="d-none d-xl-flex">
+                    <i class="ms-Icon ms-Icon--Education"></i> CDC HL7
+                </a>
+                <a href="https://github.com/tngo0508/CAIR2-HL7-parser/issues" target="_blank" rel="noopener noreferrer">
+                    <i class="ms-Icon ms-Icon--Bug"></i> Report
+                </a>
                 <a href="https://github.com/tngo0508/CAIR2-HL7-parser" target="_blank" rel="noopener noreferrer">
-                    <svg height="16" width="16" viewBox="0 0 16 16" style="margin-right: 6px; fill: currentColor;" aria-hidden="true">
+                    <svg height="16" width="16" viewBox="0 0 16 16" style="fill: currentColor;" aria-hidden="true">
                         <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
                     </svg>
                     GitHub
                 </a>
-                <a href="https://www.linkedin.com/in/thomasngo19/" target="_blank" rel="noopener noreferrer">
-                    <i class="ms-Icon ms-Icon--LinkedIn" style="margin-right: 4px;"></i> Thomas Ngo
+                <a href="https://www.linkedin.com/in/thomasngo19/" target="_blank" rel="noopener noreferrer" class="d-none d-lg-flex">
+                    <i class="ms-Icon ms-Icon--LinkedIn"></i> LinkedIn
                 </a>
             </div>
         </footer>

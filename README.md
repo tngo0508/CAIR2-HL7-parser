@@ -111,6 +111,7 @@ dotnet test Hl7Test/Hl7Test.csproj
 ## 📖 References
 - [Live Demo](https://cair2-hl7-gfc5aqc3bteca6c7.canadacentral-01.azurewebsites.net/)
 - [CAIR2 Implementation Guide](https://cairweb.org/)
+- [CDC HL7 Implementation Guide](https://www.cdc.gov/iis/technical-guidance/hl7.html)
 - [HL7 v2.5.1 Specification](https://www.hl7.org/)
 - [HL7Parser by LaMMMy](https://github.com/LaMMMy/HL7Parser)
 - [Online HL7 Viewer](https://www.hl7viewer.com/)

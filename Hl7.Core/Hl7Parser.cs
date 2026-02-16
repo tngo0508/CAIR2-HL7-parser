@@ -148,6 +148,7 @@ public class Hl7Parser
             "RXR" => ParseSegmentByAttributes<RXRSegment>(segmentId, fields),
             "ORC" => ParseSegmentByAttributes<ORCSegment>(segmentId, fields),
             "PD1" => ParseSegmentByAttributes<PD1Segment>(segmentId, fields),
+            "PV1" => ParseSegmentByAttributes<PV1Segment>(segmentId, fields),
             "NK1" => ParseSegmentByAttributes<NK1Segment>(segmentId, fields),
             "QPD" => ParseSegmentByAttributes<QPDSegment>(segmentId, fields),
             "RCP" => ParseSegmentByAttributes<RCPSegment>(segmentId, fields),
@@ -241,6 +242,8 @@ public class Hl7Parser
             segment.CompletionStatus = UnescapeField(GetField(fields, 20));
         if (fields.Length > 20)
             segment.ActionCode = UnescapeField(GetField(fields, 21));
+        if (fields.Length > 21)
+            segment.SystemEntryDateTime = UnescapeField(GetField(fields, 22));
 
         var field12 = GetField(fields, 12);
         var field13 = GetField(fields, 13);

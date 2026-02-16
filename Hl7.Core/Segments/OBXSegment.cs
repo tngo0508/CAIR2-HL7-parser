@@ -103,6 +103,30 @@ public class OBXSegment : Segment
     public string ObservationMethod { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the Responsible Observer (OBX-16)
+    /// </summary>
+    [DataElement(16, "Responsible Observer", ElementUsage.Optional)]
+    public XPN ResponsibleObserverXpn { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the Observation Method (OBX-17)
+    /// </summary>
+    [DataElement(17, "Observation Method (CE)", ElementUsage.Optional)]
+    public CE ObservationMethodCe { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the Equipment Instance Identifier (OBX-18)
+    /// </summary>
+    [DataElement(18, "Equipment Instance Identifier", ElementUsage.Optional)]
+    public string EquipmentInstanceIdentifier { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Date/Time of the Analysis (OBX-19)
+    /// </summary>
+    [DataElement(19, "Date/Time of the Analysis", ElementUsage.Optional)]
+    public string DateTimeOfTheAnalysis { get; set; } = string.Empty;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="OBXSegment"/> class
     /// </summary>
     public OBXSegment() : base("OBX")

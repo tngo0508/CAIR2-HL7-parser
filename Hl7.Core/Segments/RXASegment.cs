@@ -133,6 +133,12 @@ public class RXASegment : Segment
     public string ActionCode { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the System Entry Date/Time (RXA-22)
+    /// </summary>
+    [DataElement(22, "System Entry Date/Time", ElementUsage.Optional)]
+    public string SystemEntryDateTime { get; set; } = string.Empty;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="RXASegment"/> class
     /// </summary>
     public RXASegment() : base("RXA")

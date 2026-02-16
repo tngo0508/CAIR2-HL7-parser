@@ -47,6 +47,12 @@ public class CE : CompositeDataType
     public CE(string value) : base(value) { }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="CE"/> class with a value and separators
+    /// </summary>
+    public CE(string value, char componentSeparator, char subComponentSeparator) 
+        : base(value, componentSeparator, subComponentSeparator) { }
+
+    /// <summary>
     /// Implicit conversion from string to CE
     /// </summary>
     /// <param name="value">The string value</param>
@@ -114,6 +120,12 @@ public class CX : CompositeDataType
     public CX(string value) : base(value) { }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="CX"/> class with a value and separators
+    /// </summary>
+    public CX(string value, char componentSeparator, char subComponentSeparator) 
+        : base(value, componentSeparator, subComponentSeparator) { }
+
+    /// <summary>
     /// Implicit conversion from string to CX
     /// </summary>
     /// <param name="value">The string value</param>
@@ -130,6 +142,8 @@ public class CX : CompositeDataType
         3 => "Assigning Authority",
         4 => "Identifier Type Code",
         5 => "Assigning Facility",
+        6 => "Effective Date",
+        7 => "Expiration Date",
         _ => base.GetComponentName(index)
     };
 }
@@ -184,6 +198,12 @@ public class XPN : CompositeDataType
     /// </summary>
     /// <param name="value">The person name value</param>
     public XPN(string value) : base(value) { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="XPN"/> class with a value and separators
+    /// </summary>
+    public XPN(string value, char componentSeparator, char subComponentSeparator) 
+        : base(value, componentSeparator, subComponentSeparator) { }
 
     /// <summary>
     /// Implicit conversion from string to XPN
@@ -270,6 +290,12 @@ public class XAD : CompositeDataType
     public XAD(string value) : base(value) { }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="XAD"/> class with a value and separators
+    /// </summary>
+    public XAD(string value, char componentSeparator, char subComponentSeparator) 
+        : base(value, componentSeparator, subComponentSeparator) { }
+
+    /// <summary>
     /// Implicit conversion from string to XAD
     /// </summary>
     /// <param name="value">The string value</param>
@@ -351,6 +377,12 @@ public class XTN : CompositeDataType
     /// </summary>
     /// <param name="value">The telecommunication number value</param>
     public XTN(string value) : base(value) { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="XTN"/> class with a value and separators
+    /// </summary>
+    public XTN(string value, char componentSeparator, char subComponentSeparator) 
+        : base(value, componentSeparator, subComponentSeparator) { }
 
     /// <summary>
     /// Implicit conversion from string to XTN

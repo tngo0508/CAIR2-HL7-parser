@@ -60,6 +60,12 @@ public class PIDSegment : Segment
     public string AdministrativeSex { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the Patient Alias (PID-9)
+    /// </summary>
+    [DataElement(9, "Patient Alias", ElementUsage.Optional)]
+    public XPN PatientAlias { get; set; } = new();
+
+    /// <summary>
     /// Gets or sets the Race (PID-10)
     /// </summary>
     [DataElement(10, "Race", ElementUsage.Optional)]
@@ -148,6 +154,42 @@ public class PIDSegment : Segment
     /// </summary>
     [DataElement(26, "Citizenship", ElementUsage.Optional)]
     public string Citizenship { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Veterans Military Status (PID-27)
+    /// </summary>
+    [DataElement(27, "Veterans Military Status", ElementUsage.Optional)]
+    public CE VeteransMilitaryStatus { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the Nationality (PID-28)
+    /// </summary>
+    [DataElement(28, "Nationality", ElementUsage.Optional)]
+    public CE Nationality { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the Patient Death Date and Time (PID-29)
+    /// </summary>
+    [DataElement(29, "Patient Death Date and Time", ElementUsage.Optional)]
+    public string PatientDeathDateTime { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Patient Death Indicator (PID-30)
+    /// </summary>
+    [DataElement(30, "Patient Death Indicator", ElementUsage.Optional)]
+    public string PatientDeathIndicator { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Identity Unknown Indicator (PID-31)
+    /// </summary>
+    [DataElement(31, "Identity Unknown Indicator", ElementUsage.Optional)]
+    public string IdentityUnknownIndicator { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Identity Reliability Code (PID-32)
+    /// </summary>
+    [DataElement(32, "Identity Reliability Code", ElementUsage.Optional)]
+    public string IdentityReliabilityCode { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the Last Update Date/Time (PID-33)

@@ -112,7 +112,7 @@ public class Hl7Parser
         mshSegment.Fields[1] = fieldSeparator.ToString(); // MSH-1 is the separator
         for (int i = 1; i < fields.Length; i++)
         {
-            mshSegment.Fields[i + 1] = UnescapeField(fields[i]);
+            mshSegment.Fields[i + 1] = fields[i];
         }
 
         return mshSegment;
@@ -125,6 +125,9 @@ public class Hl7Parser
     {
         if (string.IsNullOrWhiteSpace(segmentLine))
             return null;
+
+        if (segmentLine.Length < 3)
+            return ParseGenericSegment(segmentLine, Array.Empty<string>());
 
         var segmentId = segmentLine[..3];
         
@@ -171,20 +174,34 @@ public class Hl7Parser
         foreach (var entry in properties)
         {
             var position = entry.Attribute!.Position;
-            var rawValue = UnescapeField(GetField(fields, position));
+            var rawValue = GetField(fields, position);
 
             if (entry.Property.PropertyType == typeof(int))
             {
-                entry.Property.SetValue(segment, ParseInt(rawValue));
+                entry.Property.SetValue(segment, ParseInt(UnescapeField(rawValue)));
             }
             else if (entry.Property.PropertyType == typeof(string))
             {
-                entry.Property.SetValue(segment, rawValue);
+                entry.Property.SetValue(segment, UnescapeField(rawValue));
             }
             else if (typeof(CompositeDataType).IsAssignableFrom(entry.Property.PropertyType))
             {
                 var composite = (CompositeDataType)Activator.CreateInstance(entry.Property.PropertyType)!;
                 composite.Parse(rawValue, _separators.ComponentSeparator, _separators.SubComponentSeparator);
+                
+                // Unescape components and subcomponents
+                for (int i = 0; i < composite.Components.Count; i++)
+                {
+                    composite.Components[i] = UnescapeField(composite.Components[i]);
+                    if (composite.SubComponents.ContainsKey(i))
+                    {
+                        for (int j = 0; j < composite.SubComponents[i].Count; j++)
+                        {
+                            composite.SubComponents[i][j] = UnescapeField(composite.SubComponents[i][j]);
+                        }
+                    }
+                }
+                
                 entry.Property.SetValue(segment, composite);
             }
         }
@@ -202,22 +219,22 @@ public class Hl7Parser
             AdministrationSubIdCounter = UnescapeField(GetField(fields, 2)),
             DateTimeOfAdministration = UnescapeField(GetField(fields, 3)),
             DateTimeOfAdministrationEnd = UnescapeField(GetField(fields, 4)),
-            AdministeredCode = new CE(UnescapeField(GetField(fields, 5))),
+            AdministeredCode = ParseComposite<CE>(GetField(fields, 5)),
             AdministeredAmount = UnescapeField(GetField(fields, 6)),
-            AdministeredUnits = new CE(UnescapeField(GetField(fields, 7))),
+            AdministeredUnits = ParseComposite<CE>(GetField(fields, 7)),
             AdministrationNotes = UnescapeField(GetField(fields, 9)),
-            AdministeringProvider = new XPN(UnescapeField(GetField(fields, 10))),
+            AdministeringProvider = ParseComposite<XPN>(GetField(fields, 10)),
             AdministeredAtLocation = UnescapeField(GetField(fields, 11)),
             AdministeredPer = UnescapeField(GetField(fields, 12)),
             AdministeredStrength = UnescapeField(GetField(fields, 13)),
             AdministeredStrengthUnits = UnescapeField(GetField(fields, 14)),
             SubstanceLotNumber = UnescapeField(GetField(fields, 15)),
             SubstanceExpirationDate = UnescapeField(GetField(fields, 16)),
-            SubstanceManufacturerName = new CE(UnescapeField(GetField(fields, 17)))
+            SubstanceManufacturerName = ParseComposite<CE>(GetField(fields, 17))
         };
 
         if (fields.Length > 17)
-            segment.SubstanceRefusalReason = new CE(UnescapeField(GetField(fields, 18)));
+            segment.SubstanceRefusalReason = ParseComposite<CE>(GetField(fields, 18));
         if (fields.Length > 18)
             segment.Indication = UnescapeField(GetField(fields, 19));
         if (fields.Length > 19)
@@ -225,32 +242,52 @@ public class Hl7Parser
         if (fields.Length > 20)
             segment.ActionCode = UnescapeField(GetField(fields, 21));
 
-        var field12 = UnescapeField(GetField(fields, 12));
-        var field13 = UnescapeField(GetField(fields, 13));
-        var field14 = UnescapeField(GetField(fields, 14));
-        var field15 = UnescapeField(GetField(fields, 15));
+        var field12 = GetField(fields, 12);
+        var field13 = GetField(fields, 13);
+        var field14 = GetField(fields, 14);
+        var field15 = GetField(fields, 15);
 
         if (!string.IsNullOrWhiteSpace(field12) && LooksLikeDate(field13) && string.IsNullOrWhiteSpace(field14))
         {
-            segment.SubstanceLotNumber = field12;
-            segment.SubstanceExpirationDate = field13;
+            segment.SubstanceLotNumber = UnescapeField(field12);
+            segment.SubstanceExpirationDate = UnescapeField(field13);
             if (!string.IsNullOrWhiteSpace(field15))
-                segment.SubstanceManufacturerName = new CE(field15);
+                segment.SubstanceManufacturerName = ParseComposite<CE>(field15);
         }
         else if (string.IsNullOrWhiteSpace(segment.SubstanceLotNumber))
         {
             if (!string.IsNullOrWhiteSpace(field12))
             {
-                segment.SubstanceLotNumber = field12;
+                segment.SubstanceLotNumber = UnescapeField(field12);
                 if (string.IsNullOrWhiteSpace(segment.SubstanceExpirationDate))
-                    segment.SubstanceExpirationDate = field13;
+                    segment.SubstanceExpirationDate = UnescapeField(field13);
                 if (string.IsNullOrWhiteSpace(segment.SubstanceManufacturerName))
-                    segment.SubstanceManufacturerName = new CE(field15);
+                    segment.SubstanceManufacturerName = ParseComposite<CE>(field15);
             }
         }
 
         PopulateSegmentFields(segment, fields);
         return segment;
+    }
+
+    private TComposite ParseComposite<TComposite>(string value) where TComposite : CompositeDataType, new()
+    {
+        var composite = new TComposite();
+        composite.Parse(value, _separators.ComponentSeparator, _separators.SubComponentSeparator);
+        
+        for (int i = 0; i < composite.Components.Count; i++)
+        {
+            composite.Components[i] = UnescapeField(composite.Components[i]);
+            if (composite.SubComponents.ContainsKey(i))
+            {
+                for (int j = 0; j < composite.SubComponents[i].Count; j++)
+                {
+                    composite.SubComponents[i][j] = UnescapeField(composite.SubComponents[i][j]);
+                }
+            }
+        }
+        
+        return composite;
     }
 
     private static bool LooksLikeDate(string value)
@@ -272,7 +309,7 @@ public class Hl7Parser
 
     private Segment ParseGenericSegment(string segmentId, string[] fields)
     {
-        var segment = new Segment(segmentId);
+        var segment = new Segment(string.IsNullOrWhiteSpace(segmentId) ? "???" : segmentId);
         PopulateSegmentFields(segment, fields);
         return segment;
     }
@@ -283,20 +320,26 @@ public class Hl7Parser
     private void PopulateSegmentFields(Segment segment, string[] fields)
     {
         segment.Fields = new Dictionary<int, string>();
+        if (fields == null) return;
+        
         for (int i = 1; i < fields.Length; i++)
         {
-            segment.Fields[i] = UnescapeField(fields[i]);
+            segment.Fields[i] = fields[i];
         }
     }
 
     private string[] SplitFields(string line, char fieldSeparator)
     {
+        if (string.IsNullOrEmpty(line))
+            return Array.Empty<string>();
         return line.Split(fieldSeparator);
     }
 
     private string GetField(string[] fields, int index)
     {
-        return index >= 0 && index < fields.Length ? fields[index] : string.Empty;
+        if (fields == null || index < 0 || index >= fields.Length)
+            return string.Empty;
+        return fields[index];
     }
 
     private int ParseInt(string value)

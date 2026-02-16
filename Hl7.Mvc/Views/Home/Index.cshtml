@@ -1,5 +1,6 @@
 ﻿@model Hl7ParseViewModel
 @using Hl7.Core.Utils
+@using Hl7.Core.Types
 @{
     ViewData["Title"] = "HL7 Parser";
 }
@@ -154,8 +155,14 @@
                                             <tbody>
                                                 @foreach (var field in segment.Fields.OrderBy(f => f.Key))
                                                 {
+                                                    var fieldName = segment.GetFieldName(field.Key);
+                                                    var fieldType = segment.GetFieldType(field.Key);
+                                                    
                                                     <tr>
-                                                        <td class="text-nowrap"><strong>@segment.SegmentId-@field.Key</strong></td>
+                                                        <td class="text-nowrap">
+                                                            <strong>@segment.SegmentId-@field.Key</strong><br/>
+                                                            <small class="text-muted">@fieldName</small>
+                                                        </td>
                                                         <td>
                                                             @if (string.IsNullOrEmpty(field.Value))
                                                             {
@@ -176,7 +183,21 @@
                                                                                 @if (repetitions.Count > 1) { <div class="text-muted mb-1">Repetition:</div> }
                                                                                 
                                                                                 @{
-                                                                                    var composite = Hl7FieldHelper.ParseComposite(rep, Model.ParsedMessage.Separators);
+                                                                                    CompositeDataType composite;
+                                                                                    if (typeof(CompositeDataType).IsAssignableFrom(fieldType) && fieldType != typeof(CompositeDataType))
+                                                                                    {
+                                                                                        // Try to use the specialized type if it has a constructor for the value
+                                                                                        try {
+                                                                                            composite = (CompositeDataType)Activator.CreateInstance(fieldType, rep, Model.ParsedMessage.Separators.ComponentSeparator, Model.ParsedMessage.Separators.SubComponentSeparator)!;
+                                                                                        } catch {
+                                                                                            composite = Hl7FieldHelper.ParseComposite(rep, Model.ParsedMessage.Separators);
+                                                                                        }
+                                                                                    }
+                                                                                    else
+                                                                                    {
+                                                                                        composite = Hl7FieldHelper.ParseComposite(rep, Model.ParsedMessage.Separators);
+                                                                                    }
+
                                                                                     if (composite.Components.Count > 1)
                                                                                     {
                                                                                         for (int c = 0; c < composite.Components.Count; c++)
@@ -184,7 +205,7 @@
                                                                                             if (!string.IsNullOrEmpty(composite.Components[c]))
                                                                                             {
                                                                                                 <div class="ms-2 mb-1">
-                                                                                                    <span class="component-badge">C@(c+1)</span>@composite.Components[c]
+                                                                                                    <span class="component-badge" title="C@(c+1)">@composite.GetComponentName(c)</span>@composite.Components[c]
                                                                                                     
                                                                                                     @if (composite.SubComponents.ContainsKey(c) && composite.SubComponents[c].Count > 1)
                                                                                                     {

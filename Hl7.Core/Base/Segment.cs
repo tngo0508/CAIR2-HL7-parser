@@ -1,3 +1,6 @@
+using System.Reflection;
+using Hl7.Core.Common;
+
 namespace Hl7.Core.Base;
 
 /// <summary>
@@ -37,6 +40,65 @@ public class Segment
     public string GetField(int position)
     {
         return Fields.TryGetValue(position, out var value) ? value : string.Empty;
+    }
+
+    /// <summary>
+    /// Gets the descriptive name of a field at the specified position
+    /// </summary>
+    /// <param name="position">The 1-based position of the field</param>
+    /// <returns>The field name if found via DataElementAttribute; otherwise, a generic name</returns>
+    public string GetFieldName(int position)
+    {
+        // For MSH, we have special handling because MSH-1 is the separator and MSH-2 are the encoding characters
+        if (SegmentId == "MSH")
+        {
+            return position switch
+            {
+                1 => "Field Separator",
+                2 => "Encoding Characters",
+                3 => "Sending Application",
+                4 => "Sending Facility",
+                5 => "Receiving Application",
+                6 => "Receiving Facility",
+                7 => "Date/Time of Message",
+                8 => "Security",
+                9 => "Message Type",
+                10 => "Message Control ID",
+                11 => "Processing ID",
+                12 => "Version ID",
+                13 => "Sequence Number",
+                14 => "Continuation Pointer",
+                15 => "Accept Acknowledgment Type",
+                16 => "Application Acknowledgment Type",
+                17 => "Country Code",
+                18 => "Character Set",
+                19 => "Principal Language of Message",
+                20 => "Alternate Character Set Handling Scheme",
+                21 => "Message Profile Identifier",
+                _ => $"Field {position}"
+            };
+        }
+
+        var property = this.GetType()
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .FirstOrDefault(p => p.GetCustomAttribute<DataElementAttribute>()?.Position == position);
+
+        var name = property?.GetCustomAttribute<DataElementAttribute>()?.Name;
+        return !string.IsNullOrEmpty(name) ? name : $"Field {position}";
+    }
+
+    /// <summary>
+    /// Gets the type of a field at the specified position
+    /// </summary>
+    /// <param name="position">The 1-based position of the field</param>
+    /// <returns>The field type if found via DataElementAttribute; otherwise, typeof(string)</returns>
+    public Type GetFieldType(int position)
+    {
+        var property = this.GetType()
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .FirstOrDefault(p => p.GetCustomAttribute<DataElementAttribute>()?.Position == position);
+
+        return property?.PropertyType ?? typeof(string);
     }
 
     /// <summary>

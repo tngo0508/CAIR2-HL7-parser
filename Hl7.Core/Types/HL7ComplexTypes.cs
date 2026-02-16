@@ -51,6 +51,20 @@ public class CE : CompositeDataType
     /// </summary>
     /// <param name="value">The string value</param>
     public static implicit operator CE(string value) => new CE(value);
+
+    /// <summary>
+    /// Gets the descriptive name of a component at the specified index
+    /// </summary>
+    public override string GetComponentName(int index) => index switch
+    {
+        0 => "Identifier",
+        1 => "Text",
+        2 => "Name of Coding System",
+        3 => "Alternate Identifier",
+        4 => "Alternate Text",
+        5 => "Name of Alternate Coding System",
+        _ => base.GetComponentName(index)
+    };
 }
 
 /// <summary>
@@ -104,6 +118,20 @@ public class CX : CompositeDataType
     /// </summary>
     /// <param name="value">The string value</param>
     public static implicit operator CX(string value) => new CX(value);
+
+    /// <summary>
+    /// Gets the descriptive name of a component at the specified index
+    /// </summary>
+    public override string GetComponentName(int index) => index switch
+    {
+        0 => "ID Number",
+        1 => "Check Digit",
+        2 => "Check Digit Scheme",
+        3 => "Assigning Authority",
+        4 => "Identifier Type Code",
+        5 => "Assigning Facility",
+        _ => base.GetComponentName(index)
+    };
 }
 
 /// <summary>
@@ -162,6 +190,22 @@ public class XPN : CompositeDataType
     /// </summary>
     /// <param name="value">The string value</param>
     public static implicit operator XPN(string value) => new XPN(value);
+
+    /// <summary>
+    /// Gets the descriptive name of a component at the specified index
+    /// </summary>
+    public override string GetComponentName(int index) => index switch
+    {
+        0 => "Family Name",
+        1 => "Given Name",
+        2 => "Second and Further Given Names or Initials",
+        3 => "Suffix",
+        4 => "Prefix",
+        5 => "Degree",
+        6 => "Name Type Code",
+        7 => "Name Representation Code",
+        _ => base.GetComponentName(index)
+    };
 }
 
 /// <summary>
@@ -230,6 +274,26 @@ public class XAD : CompositeDataType
     /// </summary>
     /// <param name="value">The string value</param>
     public static implicit operator XAD(string value) => new XAD(value);
+
+    /// <summary>
+    /// Gets the descriptive name of a component at the specified index
+    /// </summary>
+    public override string GetComponentName(int index) => index switch
+    {
+        0 => "Street Address",
+        1 => "Other Designation",
+        2 => "City",
+        3 => "State or Province",
+        4 => "Zip or Postal Code",
+        5 => "Country",
+        6 => "Address Type",
+        7 => "Other Geographic Designation",
+        8 => "County/Parish Code",
+        9 => "Census Tract",
+        10 => "Address Representation Code",
+        11 => "Address Validity Range",
+        _ => base.GetComponentName(index)
+    };
 }
 
 /// <summary>
@@ -293,4 +357,21 @@ public class XTN : CompositeDataType
     /// </summary>
     /// <param name="value">The string value</param>
     public static implicit operator XTN(string value) => new XTN(value);
+
+    /// <summary>
+    /// Gets the descriptive name of a component at the specified index
+    /// </summary>
+    public override string GetComponentName(int index) => index switch
+    {
+        0 => "Telephone Number",
+        1 => "Telecommunication Use Code",
+        2 => "Telecommunication Equipment Type",
+        3 => "Email Address",
+        4 => "Country Code",
+        5 => "Area/City Code",
+        6 => "Local Number",
+        7 => "Extension",
+        8 => "Any Text",
+        _ => base.GetComponentName(index)
+    };
 }

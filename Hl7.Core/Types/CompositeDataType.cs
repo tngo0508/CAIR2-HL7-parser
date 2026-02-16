@@ -1,3 +1,6 @@
+using System.Reflection;
+using System.ComponentModel;
+
 namespace Hl7.Core.Types;
 
 /// <summary>
@@ -68,6 +71,16 @@ public class CompositeDataType
     /// <returns>The component value; or empty string if index is out of range</returns>
     public string GetComponent(int index) => 
         index < Components.Count ? Components[index] : string.Empty;
+
+    /// <summary>
+    /// Gets the descriptive name of a component at the specified index
+    /// </summary>
+    /// <param name="index">The 0-based component index</param>
+    /// <returns>The component name if available; otherwise, a generic name</returns>
+    public virtual string GetComponentName(int index)
+    {
+        return $"C{index + 1}";
+    }
 
     /// <summary>
     /// Gets a subcomponent value by component index and subcomponent index

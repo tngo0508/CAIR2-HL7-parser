@@ -9,79 +9,89 @@
     <link rel="stylesheet" href="~/css/hl7-viewer.css" asp-append-version="true" />
 }
 
-<div class="main-layout">
-    <!-- Sidebar: Input & Raw Explorer -->
-    <div class="sidebar">
-        <fluent-card class="input-card">
-            <div class="input-section">
-                <h2 class="section-title">HL7 Input</h2>
-                <form asp-action="Index" method="post" style="display: flex; flex-direction: column; flex-grow: 1;">
-                    <fluent-text-area name="Hl7Message" style="flex-grow: 1; width: 100%; font-family: 'Cascadia Code', monospace; margin-bottom: 12px;" placeholder="Paste your HL7 message here...">@Model.Hl7Message</fluent-text-area>
-                    <fluent-button type="submit" appearance="accent">Parse Message</fluent-button>
-                </form>
-            </div>
-        </fluent-card>
+<div class="container-fluid py-3">
+    <div class="row g-3">
+        <!-- Left Column: HL7 Input & Raw Explorer -->
+        <div class="col-md-5">
+            <div class="d-flex flex-column h-100">
+                <!-- HL7 Input -->
+                <fluent-card class="@(Model.ParsedMessage != null ? "mb-3" : "h-100")">
+                    <div class="p-3 d-flex flex-column h-100">
+                        <h2 class="section-title h5 mb-3">HL7 Input</h2>
+                        <form asp-action="Index" method="post" class="d-flex flex-column flex-grow-1">
+                            <fluent-text-area name="Hl7Message" class="flex-grow-1 mb-3" style="font-family: 'Cascadia Code', monospace; width: 100%; min-height: 250px;" placeholder="Paste your HL7 message here...">@Model.Hl7Message</fluent-text-area>
+                            <fluent-button type="submit" appearance="accent">Parse Message</fluent-button>
+                        </form>
+                    </div>
+                </fluent-card>
 
-        @if (Model.ParsedMessage != null)
-        {
-            <fluent-card class="raw-card">
-                <div class="raw-section">
-                    <h2 class="section-title">Raw Message</h2>
-                    <div class="hl7-raw" id="raw-explorer">
-                        @{
-                            var rawLines = Model.Hl7Message.Split(new[] { "\r\n", "\r", "\n", "\v", "\f", "\x1C" }, StringSplitOptions.RemoveEmptyEntries);
-                            for (int i = 0; i < rawLines.Length; i++)
+                @if (Model.ParsedMessage != null)
+                {
+                    <!-- Raw Message -->
+                    <fluent-card class="flex-grow-1">
+                        <div class="p-3 d-flex flex-column h-100">
+                            <h2 class="section-title h5 mb-3">Raw Message</h2>
+                            <div class="hl7-raw border rounded p-2 flex-grow-1" id="raw-explorer" style="background-color: #faf9f8; overflow: auto; max-height: 400px; font-family: 'Cascadia Code', monospace; font-size: 13px;">
+                                @{
+                                    var rawLines = Model.Hl7Message.Split(new[] { "\r\n", "\r", "\n", "\v", "\f", "\x1C" }, StringSplitOptions.RemoveEmptyEntries);
+                                    for (int i = 0; i < rawLines.Length; i++)
+                                    {
+                                        <span class="hl7-line d-block" onclick="scrollToSegment(@i)" id="line-@i" style="cursor: pointer; white-space: pre;"><span class="hl7-line-num me-2 text-muted" style="width: 30px; display: inline-block; text-align: right;">@(i + 1)</span>@rawLines[i]</span>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </fluent-card>
+                }
+            </div>
+        </div>
+
+        <!-- Right Column: Parsed Viewer -->
+        <div class="col-md-7">
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger" role="alert">
+                    <i class="ms-Icon ms-Icon--ErrorBadge me-2"></i> @Model.ErrorMessage
+                </div>
+            }
+
+            @if (Model.ParsedMessage != null)
+            {
+                <fluent-card class="h-100">
+                    <div class="p-3 d-flex flex-column h-100">
+                        <div class="viewer-header d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h3 class="h5 mb-0">Parsed Segments</h3>
+                                <small class="text-muted">Found @Model.ParsedMessage.Segments.Count segments</small>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.ParsedMessage.MessageVersion))
                             {
-                                <span class="hl7-line" onclick="scrollToSegment(@i)" id="line-@i"><span class="hl7-line-num">@(i + 1)</span>@rawLines[i]</span>
+                                <fluent-badge appearance="accent">HL7 v@(Model.ParsedMessage.MessageVersion)</fluent-badge>
                             }
-                        }
+                        </div>
+
+                        <div class="segments-list border rounded flex-grow-1" id="segments-container" style="max-height: 800px; overflow-y: auto;">
+                            <fluent-tree-view>
+                                @for (int i = 0; i < Model.ParsedMessage.Segments.Count; i++)
+                                {
+                                    <partial name="_SegmentDetail" model="(Model.ParsedMessage.Segments[i], i, Model.ParsedMessage)" />
+                                }
+                            </fluent-tree-view>
+                        </div>
                     </div>
-                </div>
-            </fluent-card>
-        }
-    </div>
-
-    <!-- Main Content: Parsed Viewer -->
-    <div class="content-area">
-        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-        {
-            <div class="alert alert-danger" role="alert" style="margin-bottom: 20px;">
-                <i class="ms-Icon ms-Icon--ErrorBadge me-2"></i> @Model.ErrorMessage
-            </div>
-        }
-
-        @if (Model.ParsedMessage != null)
-        {
-            <fluent-card class="viewer-card">
-                <div class="viewer-header d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3 class="ms-fontSize-20 ms-fontWeight-semibold mb-0">Parsed Segments</h3>
-                        <span class="text-muted ms-fontSize-12">Found @Model.ParsedMessage.Segments.Count segments</span>
+                </fluent-card>
+            }
+            else if (string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <fluent-card class="h-100">
+                    <div class="p-5 text-center text-muted d-flex flex-column justify-content-center h-100">
+                        <i class="ms-Icon ms-Icon--DocumentSearch d-block mb-3" style="font-size: 48px;"></i>
+                        <p class="h5">Ready to parse your HL7 message.</p>
+                        <p>Paste the message on the left and click "Parse Message".</p>
                     </div>
-                    @if (!string.IsNullOrEmpty(Model.ParsedMessage.MessageVersion))
-                    {
-                        <fluent-badge appearance="accent">HL7 v@(Model.ParsedMessage.MessageVersion)</fluent-badge>
-                    }
-                </div>
-
-                <div class="segments-list" id="segments-container">
-                    <fluent-tree-view>
-                        @for (int i = 0; i < Model.ParsedMessage.Segments.Count; i++)
-                        {
-                            <partial name="_SegmentDetail" model="(Model.ParsedMessage.Segments[i], i, Model.ParsedMessage)" />
-                        }
-                    </fluent-tree-view>
-                </div>
-            </fluent-card>
-        }
-        else if (string.IsNullOrEmpty(Model.ErrorMessage))
-        {
-            <div style="display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; color: #605e5c;">
-                <i class="ms-Icon ms-Icon--DocumentSearch" style="font-size: 64px; margin-bottom: 16px;"></i>
-                <p class="ms-fontSize-18">Ready to parse your HL7 message.</p>
-                <p class="ms-fontSize-14">Paste the message in the left panel and click "Parse Message".</p>
-            </div>
-        }
+                </fluent-card>
+            }
+        </div>
     </div>
 </div>
 

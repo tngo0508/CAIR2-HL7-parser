@@ -22,6 +22,7 @@ public class PIDFieldFixVerification
         
         var pid = parser.ParseSegment(pidLine) as PIDSegment;
         
+        Assert.NotNull(pid);
         Console.WriteLine("=== PID FIELD VERIFICATION ===\n");
         
         Console.WriteLine("Position 1 (SetId):");

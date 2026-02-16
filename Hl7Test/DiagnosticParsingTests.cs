@@ -49,6 +49,7 @@ public class DiagnosticParsingTests
         
         var pid = parser.ParseSegment(pidLine) as PIDSegment;
         
+        Assert.NotNull(pid);
         Console.WriteLine("\n=== PID DEBUG ===");
         Console.WriteLine($"SegmentId: '{pid.SegmentId}'");
         Console.WriteLine($"SetId: {pid.SetId} (expected: 1)");
@@ -82,6 +83,7 @@ public class DiagnosticParsingTests
         
         var rxa = parser.ParseSegment(rxaLine) as RXASegment;
         
+        Assert.NotNull(rxa);
         Console.WriteLine("\n=== RXA DEBUG ===");
         Console.WriteLine($"SegmentId: '{rxa.SegmentId}'");
         Console.WriteLine($"GiveSubIdCounter: {rxa.GiveSubIdCounter} (expected: 0)");
@@ -114,6 +116,7 @@ public class DiagnosticParsingTests
         
         var obx = parser.ParseSegment(obxLine) as OBXSegment;
         
+        Assert.NotNull(obx);
         Console.WriteLine("\n=== OBX DEBUG ===");
         Console.WriteLine($"SegmentId: '{obx.SegmentId}'");
         Console.WriteLine($"SetId: {obx.SetId} (expected: 1)");

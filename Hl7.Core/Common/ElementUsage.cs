@@ -31,8 +31,16 @@ public enum ElementUsage
     NotSupported
 }
 
+/// <summary>
+/// Extension methods for the <see cref="ElementUsage"/> enum
+/// </summary>
 public static class ElementUsageExtensions
 {
+    /// <summary>
+    /// Converts an <see cref="ElementUsage"/> value to its HL7 code representation
+    /// </summary>
+    /// <param name="usage">The element usage</param>
+    /// <returns>The HL7 code (R, RE, O, C, or X)</returns>
     public static string ToHl7Code(this ElementUsage usage) => usage switch
     {
         ElementUsage.Required => "R",
@@ -43,6 +51,11 @@ public static class ElementUsageExtensions
         _ => throw new ArgumentOutOfRangeException(nameof(usage), usage, "Unknown usage.")
     };
 
+    /// <summary>
+    /// Converts an HL7 code to its <see cref="ElementUsage"/> enum value
+    /// </summary>
+    /// <param name="code">The HL7 code</param>
+    /// <returns>The <see cref="ElementUsage"/> enum value</returns>
     public static ElementUsage FromHl7Code(string code) => code switch
     {
         "R" => ElementUsage.Required,

@@ -22,6 +22,7 @@ public class RXAFieldFixVerification
         
         var rxa = parser.ParseSegment(rxaLine) as RXASegment;
         
+        Assert.NotNull(rxa);
         Console.WriteLine("=== RXA FIELD VERIFICATION ===");
         Console.WriteLine($"GiveSubIdCounter: {rxa.GiveSubIdCounter} (expected: 0)");
         Console.WriteLine($"AdministrationSubIdCounter: '{rxa.AdministrationSubIdCounter}' (expected: '1')");

@@ -1,5 +1,7 @@
 # HL7v2 Parser for CAIR2
 
+![.NET Status](https://github.com/tngo0508/CAIR2-HL7-parser/actions/workflows/dotnet.yml/badge.svg?branch=master)
+
 A comprehensive .NET HL7v2 (Health Level 7 version 2) message parser specifically designed for California's Immunization Registry (CAIR2) system.
 
 ## Features

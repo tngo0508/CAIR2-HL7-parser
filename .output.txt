@@ -1,0 +1,1445 @@
+diff --git a/.output.txt b/.output.txt
+index 37754b8..5cc3064 100644
+--- a/.output.txt
++++ b/.output.txt
+@@ -1,281 +1,589 @@
+-commit 05e2ad9b33a2b15d21d0de5529149595504d72e2 (HEAD -> feature/enhancement-1, origin/feature/enhancement-1)
+-Author: Thomas Ngo <tngo0508@gmail.com>
+-Date:   Sun Feb 15 15:22:29 2026 -0800
+-    Enhance HL7 parser robustness and expand PID segment mapping
++diff --git a/Cair2Hl7Parser/Cair2Hl7Parser.csproj b/Cair2Hl7Parser/Cair2Hl7Parser.csproj
++index 6c1dc92..2fe7293 100644
++--- a/Cair2Hl7Parser/Cair2Hl7Parser.csproj
+++++ b/Cair2Hl7Parser/Cair2Hl7Parser.csproj
++@@ -7,4 +7,8 @@
++         <Nullable>enable</Nullable>
++     </PropertyGroup>
++
+++    <ItemGroup>
+++      <ProjectReference Include="..\Hl7.Core\Hl7.Core.csproj" />
+++    </ItemGroup>
+++
++ </Project>
++diff --git a/Cair2Hl7Parser/Program.cs b/Cair2Hl7Parser/Program.cs
++index b33e1bd..821ad09 100644
++--- a/Cair2Hl7Parser/Program.cs
+++++ b/Cair2Hl7Parser/Program.cs
++@@ -1,9 +1,27 @@
++-﻿namespace Cair2Hl7Parser;
+++﻿using Hl7.Core;
+++using Hl7.Core.Segments;
+++
+++namespace Cair2Hl7Parser;
++
++ class Program
++ {
++     static void Main(string[] args)
++     {
++         Console.WriteLine("Hello, World!");
+++        var parser = new Hl7Parser();
+++        var message = parser.ParseMessage("MSH|^~\\&|SendingSystem|SendingFacility|CAIR2|CDPH|20240901100000||VXU^V04^VXU_V04|MSGID001|P|2.5.1|||NE|NE|||CDPH_2_5_1|\nPID|1||PID123^^^MRN||DOE^JOHN^||20200101|M||2106-3^White^CD9^...|123 Main St^Anytown^CA^90000^USA^H||^PRN^PH^^1^555^5555|||||||...|2135-2^Hispanic or Latino^CD9^...|||||||\nPV1|1|R||||||||||||||||||||||||||||||||||||||||||\nORC|RE|||1234567890^CLINIC|||||||123456^DR^TEST^^^^^^NPI|||||||\nRXA|0|1|20240901|20240901|108^Influenza, seasonal, inactivated, nasal^CVX|0.5|mL^milliliters^UCUM||00^Administered^NIP001||||||||||||||\nRXR|C28161^Intranasal^NCIT|LA^Left Arm^HL70163|\nOBX|1|CE|64994-7^Vaccine CVX Code^LN|1|108^Influenza, seasonal, inactivated, nasal^CVX||||||F|||20240901|\nOBX|2|CE|30956-7^Vaccine Type^LN|2|108^Influenza, seasonal, inactivated, nasal^CVX||||||F|||20240901|\nOBX|3|CE|69764-9^Administered Date^LN|3|20240901||||||F|||20240901|\n");
+++
+++        PIDSegment? pid = message.GetSegment<PIDSegment>("PID");
+++        RXASegment? rxa = message.GetSegment<RXASegment>("RXA");
+++
+++        if (pid != null)
+++        {
+++            Console.WriteLine("PID Segment Properties:");
+++            foreach (var property in pid.GetType().GetProperties())
+++            {
+++                var value = property.GetValue(pid);
+++                Console.WriteLine($"{property.Name}: {value}");
+++            }
+++        }
++     }
++ }
++\ No newline at end of file
+ diff --git a/Hl7.Core/Hl7Parser.cs b/Hl7.Core/Hl7Parser.cs
+-index 5fd04d9..597ad09 100644
++index 597ad09..a00d0b9 100644
+ --- a/Hl7.Core/Hl7Parser.cs
+ +++ b/Hl7.Core/Hl7Parser.cs
+-@@ -28,8 +28,8 @@ public class Hl7Parser
+-     /// </summary>
+-     public Hl7Message ParseMessage(string hl7Message)
+-     {
+--        if (string.IsNullOrWhiteSpace(hl7Message))
+--            throw new ArgumentException("HL7 message cannot be null or empty");
+-+        if (string.IsNullOrEmpty(hl7Message))
+-+            return new Hl7Message();
+-
+-         var message = new Hl7Message();
+-         var lines = hl7Message.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+-@@ -72,11 +72,14 @@ public class Hl7Parser
+-         // Extract separators from the MSH segment
+-         _separators = Hl7Separators.ParseFromMSH(segmentLine);
+-
+--        var fields = SplitFields(segmentLine, _separators.FieldSeparator);
+-+        // MSH is special. The field separator is the 4th character (index 3).
+-+        var fieldSeparator = segmentLine[3];
+-
+--        // HL7v2 MSH Special Case: After splitting by |, array indices are:
+--        // [0] = "MSH", [1] = encoding chars, [2] = SendingApplication, [3] = SendingFacility, ...
+--        // So we need to use [index+1] to get the right HL7 field
+-+        // In HL7, MSH is the only segment where the segment ID is followed immediately by the field separator,
+-+        // and that separator itself is MSH-1.
+-+        // segmentLine: "MSH|^~\\&|..."
+-+        // fields: ["MSH", "^~\\&", "...", ...]
+-+        var fields = segmentLine.Split(fieldSeparator);
+-
+-         var mshSegment = new MSHSegment
+-         {
+-@@ -104,9 +107,10 @@ public class Hl7Parser
++@@ -3,6 +3,7 @@ using Hl7.Core.Base;
++ using Hl7.Core.Common;
++ using Hl7.Core.Segments;
++ using Hl7.Core.Utils;
+++using Hl7.Core.Types;
++
++ namespace Hl7.Core;
++
++@@ -179,6 +180,12 @@ public class Hl7Parser
++             {
++                 entry.Property.SetValue(segment, rawValue);
++             }
+++            else if (typeof(CompositeDataType).IsAssignableFrom(entry.Property.PropertyType))
+++            {
+++                var composite = (CompositeDataType)Activator.CreateInstance(entry.Property.PropertyType)!;
+++                composite.Parse(rawValue, _separators.ComponentSeparator, _separators.SubComponentSeparator);
+++                entry.Property.SetValue(segment, composite);
+++            }
++         }
++
++         PopulateSegmentFields(segment, fields);
++@@ -194,22 +201,22 @@ public class Hl7Parser
++             AdministrationSubIdCounter = UnescapeField(GetField(fields, 2)),
++             DateTimeOfAdministration = UnescapeField(GetField(fields, 3)),
++             DateTimeOfAdministrationEnd = UnescapeField(GetField(fields, 4)),
++-            AdministeredCode = UnescapeField(GetField(fields, 5)),
+++            AdministeredCode = new CE(UnescapeField(GetField(fields, 5))),
++             AdministeredAmount = UnescapeField(GetField(fields, 6)),
++-            AdministeredUnits = UnescapeField(GetField(fields, 7)),
+++            AdministeredUnits = new CE(UnescapeField(GetField(fields, 7))),
++             AdministrationNotes = UnescapeField(GetField(fields, 9)),
++-            AdministeringProvider = UnescapeField(GetField(fields, 10)),
+++            AdministeringProvider = new XPN(UnescapeField(GetField(fields, 10))),
++             AdministeredAtLocation = UnescapeField(GetField(fields, 11)),
++             AdministeredPer = UnescapeField(GetField(fields, 12)),
++             AdministeredStrength = UnescapeField(GetField(fields, 13)),
++             AdministeredStrengthUnits = UnescapeField(GetField(fields, 14)),
++             SubstanceLotNumber = UnescapeField(GetField(fields, 15)),
++             SubstanceExpirationDate = UnescapeField(GetField(fields, 16)),
++-            SubstanceManufacturerName = UnescapeField(GetField(fields, 17))
+++            SubstanceManufacturerName = new CE(UnescapeField(GetField(fields, 17)))
+          };
+
+-         mshSegment.Fields = new Dictionary<int, string>();
+-+        mshSegment.Fields[1] = fieldSeparator.ToString(); // MSH-1 is the separator
+-         for (int i = 1; i < fields.Length; i++)
++         if (fields.Length > 17)
++-            segment.SubstanceRefusalReason = UnescapeField(GetField(fields, 18));
+++            segment.SubstanceRefusalReason = new CE(UnescapeField(GetField(fields, 18)));
++         if (fields.Length > 18)
++             segment.Indication = UnescapeField(GetField(fields, 19));
++         if (fields.Length > 19)
++@@ -227,7 +234,7 @@ public class Hl7Parser
++             segment.SubstanceLotNumber = field12;
++             segment.SubstanceExpirationDate = field13;
++             if (!string.IsNullOrWhiteSpace(field15))
++-                segment.SubstanceManufacturerName = field15;
+++                segment.SubstanceManufacturerName = new CE(field15);
++         }
++         else if (string.IsNullOrWhiteSpace(segment.SubstanceLotNumber))
+          {
+--            mshSegment.Fields[i] = UnescapeField(fields[i]);
+-+            mshSegment.Fields[i + 1] = UnescapeField(fields[i]);
++@@ -237,7 +244,7 @@ public class Hl7Parser
++                 if (string.IsNullOrWhiteSpace(segment.SubstanceExpirationDate))
++                     segment.SubstanceExpirationDate = field13;
++                 if (string.IsNullOrWhiteSpace(segment.SubstanceManufacturerName))
++-                    segment.SubstanceManufacturerName = field15;
+++                    segment.SubstanceManufacturerName = new CE(field15);
++             }
+          }
+
+-         return mshSegment;
++diff --git a/Hl7.Core/Segments/NK1Segment.cs b/Hl7.Core/Segments/NK1Segment.cs
++index 65eda1e..c358cfc 100644
++--- a/Hl7.Core/Segments/NK1Segment.cs
+++++ b/Hl7.Core/Segments/NK1Segment.cs
++@@ -1,6 +1,7 @@
++ using Hl7.Core.Base;
++ using Hl7.Core.Common;
++ using Hl7.Core.Utils;
+++using Hl7.Core.Types;
++
++ namespace Hl7.Core.Segments;
++
++@@ -20,25 +21,25 @@ public class NK1Segment : Segment
++     /// Gets or sets the Name (NK1-2)
++     /// </summary>
++     [DataElement(2, "Name", ElementUsage.Optional)]
++-    public string Name { get; set; } = string.Empty;
+++    public XPN Name { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Relationship (NK1-3)
++     /// </summary>
++     [DataElement(3, "Relationship", ElementUsage.Optional)]
++-    public string Relationship { get; set; } = string.Empty;
+++    public CE Relationship { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Address (NK1-4)
++     /// </summary>
++     [DataElement(4, "Address", ElementUsage.Optional)]
++-    public string Address { get; set; } = string.Empty;
+++    public XAD Address { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Phone Number (NK1-5)
++     /// </summary>
++     [DataElement(5, "Phone Number", ElementUsage.Optional)]
++-    public string PhoneNumber { get; set; } = string.Empty;
+++    public XTN PhoneNumber { get; set; } = new();
++
++     /// <summary>
++     /// Initializes a new instance of the <see cref="NK1Segment"/> class
++diff --git a/Hl7.Core/Segments/OBRSegment.cs b/Hl7.Core/Segments/OBRSegment.cs
++index 04e6c2a..c9b7e54 100644
++--- a/Hl7.Core/Segments/OBRSegment.cs
+++++ b/Hl7.Core/Segments/OBRSegment.cs
++@@ -1,6 +1,7 @@
++ using Hl7.Core.Base;
++ using Hl7.Core.Common;
++ using Hl7.Core.Utils;
+++using Hl7.Core.Types;
++
++ namespace Hl7.Core.Segments;
++
++@@ -33,7 +34,7 @@ public class OBRSegment : Segment
++     /// Gets or sets the Universal Service ID (OBR-4)
++     /// </summary>
++     [DataElement(4, "Universal Service ID", ElementUsage.Optional)]
++-    public string UniversalServiceId { get; set; } = string.Empty;
+++    public CE UniversalServiceId { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Priority (OBR-5)
++diff --git a/Hl7.Core/Segments/OBXSegment.cs b/Hl7.Core/Segments/OBXSegment.cs
++index 392daea..80a05e2 100644
++--- a/Hl7.Core/Segments/OBXSegment.cs
+++++ b/Hl7.Core/Segments/OBXSegment.cs
++@@ -1,6 +1,7 @@
++ using Hl7.Core.Base;
++ using Hl7.Core.Common;
++ using Hl7.Core.Utils;
+++using Hl7.Core.Types;
++
++ namespace Hl7.Core.Segments;
++
++@@ -27,7 +28,7 @@ public class OBXSegment : Segment
++     /// Gets or sets the Observation Identifier (OBX-3)
++     /// </summary>
++     [DataElement(3, "Observation Identifier", ElementUsage.Required)]
++-    public string ObservationIdentifier { get; set; } = string.Empty;
+++    public CE ObservationIdentifier { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Observation Sub-ID (OBX-4)
++diff --git a/Hl7.Core/Segments/ORCSegment.cs b/Hl7.Core/Segments/ORCSegment.cs
++index b2d4d5a..2a593d6 100644
++--- a/Hl7.Core/Segments/ORCSegment.cs
+++++ b/Hl7.Core/Segments/ORCSegment.cs
++@@ -1,6 +1,7 @@
++ using Hl7.Core.Base;
++ using Hl7.Core.Common;
++ using Hl7.Core.Utils;
+++using Hl7.Core.Types;
++
++ namespace Hl7.Core.Segments;
++
++@@ -32,19 +33,19 @@ public class ORCSegment : Segment
++     /// Gets or sets the person who entered the order (ORC-10)
++     /// </summary>
++     [DataElement(10, "Entered By", ElementUsage.RequiredButMayBeEmpty)]
++-    public string EnteredBy { get; set; } = string.Empty;
+++    public XPN EnteredBy { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the ordering provider (ORC-12)
++     /// </summary>
++     [DataElement(12, "Ordering Provider", ElementUsage.RequiredButMayBeEmpty)]
++-    public string OrderingProvider { get; set; } = string.Empty;
+++    public XPN OrderingProvider { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the entering organization (ORC-17)
++     /// </summary>
++     [DataElement(17, "Entering Organization", ElementUsage.RequiredButMayBeEmpty)]
++-    public string EnteringOrganization { get; set; } = string.Empty;
+++    public CE EnteringOrganization { get; set; } = new();
++
++     /// <summary>
++     /// Initializes a new instance of the <see cref="ORCSegment"/> class
+ diff --git a/Hl7.Core/Segments/PIDSegment.cs b/Hl7.Core/Segments/PIDSegment.cs
+-index f94ae12..ba6a447 100644
++index ba6a447..f2bde36 100644
+ --- a/Hl7.Core/Segments/PIDSegment.cs
+ +++ b/Hl7.Core/Segments/PIDSegment.cs
+-@@ -94,6 +94,72 @@ public class PIDSegment : Segment
++@@ -1,6 +1,7 @@
++ using Hl7.Core.Base;
++ using Hl7.Core.Common;
++ using Hl7.Core.Utils;
+++using Hl7.Core.Types;
++
++ namespace Hl7.Core.Segments;
++
++@@ -26,25 +27,25 @@ public class PIDSegment : Segment
++     /// Gets or sets the Patient Identifier List (PID-3)
++     /// </summary>
++     [DataElement(3, "Patient Identifier List", ElementUsage.Optional)]
++-    public string PatientIdentifierList { get; set; } = string.Empty;
+++    public CX PatientIdentifierList { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Alternate Patient ID - PID (PID-4)
++     /// </summary>
++     [DataElement(4, "Alternate Patient ID - PID", ElementUsage.Optional)]
++-    public string AlternatePatientId { get; set; } = string.Empty;
+++    public CX AlternatePatientId { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Patient Name (PID-5)
++     /// </summary>
++     [DataElement(5, "Patient Name", ElementUsage.Optional)]
++-    public string PatientName { get; set; } = string.Empty;
+++    public XPN PatientName { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Mother's Maiden Name (PID-6)
++     /// </summary>
++     [DataElement(6, "Mother's Maiden Name", ElementUsage.Optional)]
++-    public string MothersMaidenName { get; set; } = string.Empty;
+++    public XPN MothersMaidenName { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Date/Time of Birth (PID-7)
++@@ -62,13 +63,13 @@ public class PIDSegment : Segment
++     /// Gets or sets the Race (PID-10)
++     /// </summary>
++     [DataElement(10, "Race", ElementUsage.Optional)]
++-    public string Race { get; set; } = string.Empty;
+++    public CE Race { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Patient Address (PID-11)
++     /// </summary>
++     [DataElement(11, "Patient Address", ElementUsage.Optional)]
++-    public string PatientAddress { get; set; } = string.Empty;
+++    public XAD PatientAddress { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the County Code (PID-12)
++@@ -80,19 +81,19 @@ public class PIDSegment : Segment
++     /// Gets or sets the Phone Number - Home (PID-13)
++     /// </summary>
++     [DataElement(13, "Phone Number - Home", ElementUsage.Optional)]
++-    public string PhoneNumberHome { get; set; } = string.Empty;
+++    public XTN PhoneNumberHome { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Phone Number - Business (PID-14)
++     /// </summary>
++     [DataElement(14, "Phone Number - Business", ElementUsage.Optional)]
++-    public string PhoneNumberBusiness { get; set; } = string.Empty;
+++    public XTN PhoneNumberBusiness { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Primary Language (PID-15)
++     /// </summary>
+      [DataElement(15, "Primary Language", ElementUsage.Optional)]
+-     public string PrimaryLanguage { get; set; } = string.Empty;
++-    public string PrimaryLanguage { get; set; } = string.Empty;
+++    public CE PrimaryLanguage { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Marital Status (PID-16)
++@@ -122,7 +123,7 @@ public class PIDSegment : Segment
++     /// Gets or sets the Ethnic Group (PID-22)
++     /// </summary>
++     [DataElement(22, "Ethnic Group", ElementUsage.Optional)]
++-    public string EthnicGroup { get; set; } = string.Empty;
+++    public CE EthnicGroup { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Birth Place (PID-23)
++diff --git a/Hl7.Core/Segments/QPDSegment.cs b/Hl7.Core/Segments/QPDSegment.cs
++index 963c23e..204944e 100644
++--- a/Hl7.Core/Segments/QPDSegment.cs
+++++ b/Hl7.Core/Segments/QPDSegment.cs
++@@ -1,9 +1,9 @@
++ using Hl7.Core.Common;
++-
++-namespace Hl7.Core.Segments;
++-
++ using Hl7.Core.Base;
++ using Hl7.Core.Utils;
+++using Hl7.Core.Types;
+++
+++namespace Hl7.Core.Segments;
++
++ /// <summary>
++ /// QPD - Query Parameter Definition Segment
++@@ -15,7 +15,7 @@ public class QPDSegment : Segment
++     /// Gets or sets the message query name (QPD-1)
++     /// </summary>
++     [DataElement(1, "Message Query Name", ElementUsage.Required)]
++-    public string MessageQueryName { get; set; } = string.Empty;
+++    public CE MessageQueryName { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the query tag (QPD-2)
++@@ -27,19 +27,19 @@ public class QPDSegment : Segment
++     /// Gets or sets the patient identifier list (QPD-3)
++     /// </summary>
++     [DataElement(3, "Patient List", ElementUsage.RequiredButMayBeEmpty)]
++-    public string PatientIdentifierList { get; set; } = string.Empty;
+++    public CX PatientIdentifierList { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the patient name (QPD-4)
++     /// </summary>
++     [DataElement(4, "Patient Name", ElementUsage.Required)]
++-    public string PatientName { get; set; } = string.Empty;
+++    public XPN PatientName { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the mother's maiden name (QPD-5)
++     /// </summary>
++     [DataElement(5, "Mother's Maiden Name", ElementUsage.RequiredButMayBeEmpty)]
++-    public string MothersMaidenName { get; set; } = string.Empty;
+++    public XPN MothersMaidenName { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the date/time of birth (QPD-6)
++@@ -57,13 +57,13 @@ public class QPDSegment : Segment
++     /// Gets or sets the patient address (QPD-8)
++     /// </summary>
++     [DataElement(8, "Patient Address", ElementUsage.Required)]
++-    public string PatientAddress { get; set; } = string.Empty;
+++    public XAD PatientAddress { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the home phone number (QPD-9)
++     /// </summary>
++     [DataElement(9, "Phone Number - Home", ElementUsage.RequiredButMayBeEmpty)]
++-    public string PhoneNumberHome { get; set; } = string.Empty;
+++    public XTN PhoneNumberHome { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the multiple birth indicator (QPD-10)
++diff --git a/Hl7.Core/Segments/RXASegment.cs b/Hl7.Core/Segments/RXASegment.cs
++index a7e3ce4..2603861 100644
++--- a/Hl7.Core/Segments/RXASegment.cs
+++++ b/Hl7.Core/Segments/RXASegment.cs
++@@ -1,6 +1,7 @@
++ using Hl7.Core.Base;
++ using Hl7.Core.Common;
++ using Hl7.Core.Utils;
+++using Hl7.Core.Types;
++
++ namespace Hl7.Core.Segments;
++
++@@ -39,7 +40,7 @@ public class RXASegment : Segment
++     /// Gets or sets the Administered Code (RXA-5)
++     /// </summary>
++     [DataElement(5, "Administered Code", ElementUsage.Required)]
++-    public string AdministeredCode { get; set; } = string.Empty;
+++    public CE AdministeredCode { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Administered Amount (RXA-6)
++@@ -51,7 +52,7 @@ public class RXASegment : Segment
++     /// Gets or sets the Administered Units (RXA-7)
++     /// </summary>
++     [DataElement(7, "Administered Units", ElementUsage.RequiredButMayBeEmpty)]
++-    public string AdministeredUnits { get; set; } = string.Empty;
+++    public CE AdministeredUnits { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Administration Notes (RXA-9)
++@@ -63,7 +64,7 @@ public class RXASegment : Segment
++     /// Gets or sets the Administering Provider (RXA-10)
++     /// </summary>
++     [DataElement(10, "Administering Provider", ElementUsage.RequiredButMayBeEmpty)]
++-    public string AdministeringProvider { get; set; } = string.Empty;
+++    public XPN AdministeringProvider { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Administered at Location (RXA-11)
++@@ -105,13 +106,13 @@ public class RXASegment : Segment
++     /// Gets or sets the Substance Manufacturer Name (RXA-17)
++     /// </summary>
++     [DataElement(17, "Substance Manufacturer Name", ElementUsage.RequiredButMayBeEmpty)]
++-    public string SubstanceManufacturerName { get; set; } = string.Empty;
+++    public CE SubstanceManufacturerName { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Substance Refusal Reason (RXA-18)
++     /// </summary>
++     [DataElement(18, "Substance Refusal Reason", ElementUsage.Optional)]
++-    public string SubstanceRefusalReason { get; set; } = string.Empty;
+++    public CE SubstanceRefusalReason { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the Indication (RXA-19)
++diff --git a/Hl7.Core/Segments/RXRSegment.cs b/Hl7.Core/Segments/RXRSegment.cs
++index 11a588f..9acf269 100644
++--- a/Hl7.Core/Segments/RXRSegment.cs
+++++ b/Hl7.Core/Segments/RXRSegment.cs
++@@ -1,6 +1,7 @@
++ using Hl7.Core.Base;
++ using Hl7.Core.Common;
++ using Hl7.Core.Utils;
+++using Hl7.Core.Types;
++
++ namespace Hl7.Core.Segments;
++
++@@ -14,13 +15,13 @@ public class RXRSegment : Segment
++     /// Gets or sets the route (RXR-1)
++     /// </summary>
++     [DataElement(1, "Route", ElementUsage.RequiredButMayBeEmpty)]
++-    public string Route { get; set; } = string.Empty;
+++    public CE Route { get; set; } = new();
++
++     /// <summary>
++     /// Gets or sets the administration site (RXR-2)
++     /// </summary>
++     [DataElement(2, "Administration Site", ElementUsage.RequiredButMayBeEmpty)]
++-    public string AdministrationSite { get; set; } = string.Empty;
+++    public CE AdministrationSite { get; set; } = new();
++
++     /// <summary>
++     /// Initializes a new instance of the <see cref="RXRSegment"/> class
++diff --git a/Hl7.Core/Types/CompositeDataType.cs b/Hl7.Core/Types/CompositeDataType.cs
++index 5bc94ff..d91cc89 100644
++--- a/Hl7.Core/Types/CompositeDataType.cs
+++++ b/Hl7.Core/Types/CompositeDataType.cs
++@@ -20,6 +20,15 @@ public class CompositeDataType
++     /// </summary>
++     public CompositeDataType() { }
+
+ +    /// <summary>
+-+    /// Gets or sets the Marital Status (PID-16)
+-+    /// </summary>
+-+    [DataElement(16, "Marital Status", ElementUsage.Optional)]
+-+    public string MaritalStatus { get; set; } = string.Empty;
+-+
+-+    /// <summary>
+-+    /// Gets or sets the Religion (PID-17)
+-+    /// </summary>
+-+    [DataElement(17, "Religion", ElementUsage.Optional)]
+-+    public string Religion { get; set; } = string.Empty;
+-+
+-+    /// <summary>
+-+    /// Gets or sets the Patient Account Number (PID-18)
+-+    /// </summary>
+-+    [DataElement(18, "Patient Account Number", ElementUsage.Optional)]
+-+    public string PatientAccountNumber { get; set; } = string.Empty;
+-+
+-+    /// <summary>
+-+    /// Gets or sets the SSN Number - Patient (PID-19)
+-+    /// </summary>
+-+    [DataElement(19, "SSN Number - Patient", ElementUsage.Optional)]
+-+    public string SSNNumberPatient { get; set; } = string.Empty;
+-+
+-+    /// <summary>
+-+    /// Gets or sets the Ethnic Group (PID-22)
+-+    /// </summary>
+-+    [DataElement(22, "Ethnic Group", ElementUsage.Optional)]
+-+    public string EthnicGroup { get; set; } = string.Empty;
+-+
+-+    /// <summary>
+-+    /// Gets or sets the Birth Place (PID-23)
+-+    /// </summary>
+-+    [DataElement(23, "Birth Place", ElementUsage.Optional)]
+-+    public string BirthPlace { get; set; } = string.Empty;
+-+
+-+    /// <summary>
+-+    /// Gets or sets the Multiple Birth Indicator (PID-24)
+-+    /// </summary>
+-+    [DataElement(24, "Multiple Birth Indicator", ElementUsage.Optional)]
+-+    public string MultipleBirthIndicator { get; set; } = string.Empty;
+-+
+-+    /// <summary>
+-+    /// Gets or sets the Birth Order (PID-25)
+++    /// Initializes a new instance of the <see cref="CompositeDataType"/> class with a value
+ +    /// </summary>
+-+    [DataElement(25, "Birth Order", ElementUsage.Optional)]
+-+    public string BirthOrder { get; set; } = string.Empty;
+++    /// <param name="value">The composite field value</param>
+++    public CompositeDataType(string value)
+++    {
+++        Parse(value, '^', '&');
+++    }
+ +
+-+    /// <summary>
+-+    /// Gets or sets the Citizenship (PID-26)
+-+    /// </summary>
+-+    [DataElement(26, "Citizenship", ElementUsage.Optional)]
+-+    public string Citizenship { get; set; } = string.Empty;
++     /// <summary>
++     /// Initializes a new instance of the <see cref="CompositeDataType"/> class by parsing a value
++     /// </summary>
++@@ -77,4 +86,16 @@ public class CompositeDataType
++     /// </summary>
++     /// <returns>The composite field string</returns>
++     public override string ToString() => string.Join("^", Components);
+ +
+ +    /// <summary>
+-+    /// Gets or sets the Last Update Date/Time (PID-33)
+++    /// Implicit conversion from string to CompositeDataType
+ +    /// </summary>
+-+    [DataElement(33, "Last Update Date/Time", ElementUsage.Optional)]
+-+    public string LastUpdateDateTime { get; set; } = string.Empty;
+++    public static implicit operator string(CompositeDataType composite) => composite?.ToString() ?? string.Empty;
+ +
+ +    /// <summary>
+-+    /// Gets or sets the Last Update Facility (PID-34)
+++    /// Implicit conversion from CompositeDataType to string
+ +    /// </summary>
+-+    [DataElement(34, "Last Update Facility", ElementUsage.Optional)]
+-+    public string LastUpdateFacility { get; set; } = string.Empty;
+-+
+-     /// <summary>
+-     /// Initializes a new instance of the <see cref="PIDSegment"/> class
+-     /// </summary>
+-diff --git a/Hl7Test/RobustnessTests.cs b/Hl7Test/RobustnessTests.cs
+-new file mode 100644
+-index 0000000..4435837
+---- /dev/null
+-+++ b/Hl7Test/RobustnessTests.cs
+-@@ -0,0 +1,148 @@
+-+using Hl7.Core;
+-+using Hl7.Core.Base;
+-+using Hl7.Core.Segments;
+-+using Hl7.Core.Common;
+-+
+-+namespace Hl7Test;
+-+
+-+public class RobustnessTests
+-+{
+-+    private readonly Hl7Parser _parser = new Hl7Parser();
+-+
+-+    [Fact]
+-+    public void Parse_Message_WithTrailingEmptyFields_ShouldNotThrow()
+-+    {
+-+        // Many HL7 messages have fewer fields than the maximum defined in the spec
+-+        string messageWithShortPID = "MSH|^~\\&|EMR|FAC||CAIR2|20230101||VXU^V04|123|P|2.5.1\nPID|1||12345";
+-+
+-+        var message = _parser.ParseMessage(messageWithShortPID);
+-+
+-+        Assert.NotNull(message);
+-+        var pid = message.GetSegment<PIDSegment>("PID");
+-+        Assert.NotNull(pid);
+-+        Assert.Equal("12345", pid.PatientIdentifierList);
+-+        Assert.Equal(string.Empty, pid.PatientName); // Optional field beyond provided data
+-+    }
+-+
+-+    [Fact]
+-+    public void Parse_Message_WithExtraFields_ShouldNotThrow()
+-+    {
+-+        // Extra fields should be ignored but captured in the generic Fields dictionary
+-+        string messageWithExtraFields = "MSH|^~\\&|EMR|FAC||CAIR2|20230101||VXU^V04|123|P|2.5.1\nPID|1||12345||DOE^JOHN||19800101|M|||||||||||||||||EXTRA_FIELD";
+-+
+-+        var message = _parser.ParseMessage(messageWithExtraFields);
+-+
+-+        Assert.NotNull(message);
+-+        var pid = message.GetSegment<PIDSegment>("PID");
+-+        Assert.NotNull(pid);
+-+        Assert.Equal("DOE^JOHN", pid.PatientName);
+-+        // Field 25 is beyond what PIDSegment normally maps, but should be in the dictionary if the parser works correctly
+-+        Assert.Equal("EXTRA_FIELD", pid.GetField(25));
+-+    }
+-+
+-+    [Fact]
+-+    public void Parse_Message_WithCustomSeparators_ShouldHandleCorrectly()
+-+    {
+-+        // Custom separators are allowed in HL7
+-+        // MSH followed by field separator '.', then encoding chars
+-+        string messageWithCustomSeparators = "MSH.~\\&.EMR.FAC..CAIR2.20230101..VXU^V04.123.P.2.5.1\nPID.1..12345";
+-+
+-+        // Note: Hl7Parser might need to be initialized with these or it might detect them.
+-+        // Looking at Hl7Parser.cs, it uses '|' by default. Let's see if it's robust.
+-+
+-+        var message = _parser.ParseMessage(messageWithCustomSeparators);
+-+
+-+        // If the parser isn't currently robust enough to detect separators from MSH automatically,
+-+        // this test might fail. That's good for identifying "robustness" gaps.
+-+        Assert.NotNull(message);
+-+        var msh = message.GetSegment<MSHSegment>("MSH");
+-+        Assert.Equal("EMR", msh.SendingApplication);
+-+    }
+-+
+-+    [Fact]
+-+    public void Parse_EmptyMessage_ShouldReturnEmptyHl7Message()
+-+    {
+-+        var message = _parser.ParseMessage("");
+-+        Assert.NotNull(message);
+-+        Assert.Empty(message.Segments);
+-+    }
+-+
+-+    [Fact]
+-+    public void Parse_MalformedMSH_ShouldReturnGenericSegments()
+-+    {
+-+        // If MSH is missing or malformed, it might not be parsed as MSHSegment but should still be parsed
+-+        string malformed = "XXX|1|2|3";
+-+        var message = _parser.ParseMessage(malformed);
+-+
+-+        Assert.NotNull(message);
+-+        Assert.Single(message.Segments);
+-+        Assert.Equal("XXX", message.Segments[0].SegmentId);
+-+    }
+-+
+-+    [Fact]
+-+    public void Parse_Message_WithEscapedCharacters_ShouldUnescape()
+-+    {
+-+        string messageWithEscapes = "MSH|^~\\&|EMR|FAC||CAIR2|20230101||VXU^V04|123|P|2.5.1\nPID|1||12345||DOE^JOHN\\F\\JR||19800101|M";
+-+
+-+        var message = _parser.ParseMessage(messageWithEscapes);
+-+
+-+        var pid = message.GetSegment<PIDSegment>("PID");
+-+        Assert.NotNull(pid);
+-+        // \F\ is field separator escape. If unescaped, it should be '|'
+-+        Assert.Equal("DOE^JOHN|JR", pid.PatientName);
+-+    }
+-+
+-+    [Fact]
+-+    public void Parse_EveryMappedField_MSH_Test()
+-+    {
+-+        string hl7 = "MSH|^~\\&|APP|FAC|RAPP|RFAC|202301011200|SEC|VXU^V04|MSGID|P|2.5.1|SEQ|CONT|ER|AL|CC|CHAR|LANG|SCHEME|PROFILE";
+-+        var message = _parser.ParseMessage(hl7);
+-+        var msh = message.GetSegment<MSHSegment>("MSH");
+-+
+-+        Assert.NotNull(msh);
+-+        Assert.Equal("^~\\&", msh.EncodingCharacters);
+-+        Assert.Equal("APP", msh.SendingApplication);
+-+        Assert.Equal("FAC", msh.SendingFacility);
+-+        Assert.Equal("RAPP", msh.ReceivingApplication);
+-+        Assert.Equal("RFAC", msh.ReceivingFacility);
+-+        Assert.Equal("202301011200", msh.MessageDateTime);
+-+        Assert.Equal("SEC", msh.Security);
+-+        Assert.Equal("VXU^V04", msh.MessageType);
+-+        Assert.Equal("MSGID", msh.MessageControlId);
+-+        Assert.Equal("P", msh.ProcessingId);
+-+        Assert.Equal("2.5.1", msh.VersionId);
+-+        Assert.Equal("SEQ", msh.SequenceNumber);
+-+        Assert.Equal("CONT", msh.ContinuationPointer);
+-+        Assert.Equal("ER", msh.AcceptAcknowledgmentType);
+-+        Assert.Equal("AL", msh.ApplicationAcknowledgmentType);
+-+        Assert.Equal("CC", msh.CountryCode);
+-+        Assert.Equal("CHAR", msh.CharacterSet);
+-+        Assert.Equal("LANG", msh.PrincipalLanguageOfMessage);
+-+        Assert.Equal("SCHEME", msh.AlternateCharacterSetHandlingScheme);
+-+        Assert.Equal("PROFILE", msh.MessageProfileIdentifier);
+-+    }
+-+
+-+    [Fact]
+-+    public void Parse_MultipleSegmentsOfSameType_ShouldAllBeAccessible()
+-+    {
+-+        string hl7 = "MSH|^~\\&|EMR|FAC||CAIR2|20230101||VXU^V04|123|P|2.5.1\nNK1|1|DOE^JANE|MTH\nNK1|2|DOE^JAMES|FTH";
+-+        var message = _parser.ParseMessage(hl7);
+-+
+-+        var nk1s = message.GetSegments<NK1Segment>("NK1");
+-+        Assert.Equal(2, nk1s.Count);
+-+        Assert.Equal("DOE^JANE", nk1s[0].Name);
+-+        Assert.Equal("DOE^JAMES", nk1s[1].Name);
+-+    }
+-+
+-+    [Fact]
+-+    public void Parse_InvalidNumericData_ShouldReturnZeroInsteadOfThrowing()
+-+    {
+-+        // PID-1 is an int. If we provide "ABC", it should be 0.
+-+        string hl7 = "MSH|^~\\&|EMR|FAC||CAIR2|20230101||VXU^V04|123|P|2.5.1\nPID|ABC||12345";
+-+        var message = _parser.ParseMessage(hl7);
+-+
+-+        var pid = message.GetSegment<PIDSegment>("PID");
+-+        Assert.NotNull(pid);
+-+        Assert.Equal(0, pid.SetId);
+-+    }
+-+}
+++    public static implicit operator CompositeDataType(string value) => new CompositeDataType(value);
+++
+++    public bool Contains(string value) => ToString().Contains(value);
++ }
++diff --git a/Hl7Test/CAIR2SpecificationTests.cs b/Hl7Test/CAIR2SpecificationTests.cs
++index 7431068..1fd3919 100644
++--- a/Hl7Test/CAIR2SpecificationTests.cs
+++++ b/Hl7Test/CAIR2SpecificationTests.cs
++@@ -3,6 +3,7 @@ using Hl7.Core.CAIR2;
++ using Hl7.Core.Segments;
++ using Hl7.Core.Base;
++ using Hl7.Core.Common;
+++using Hl7.Core.Types;
++
++ namespace Hl7Test;
++
++@@ -74,9 +75,15 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
++
++         var pid = message.GetSegment<PIDSegment>("PID");
++         Assert.NotNull(pid);
++-        Assert.Equal("JONES^GEORGE^M^JR", pid.PatientName);
+++        Assert.Equal("JONES^GEORGE^M^JR", (string)pid.PatientName);
+++        Assert.Equal("JONES", pid.PatientName.FamilyName);
+++        Assert.Equal("GEORGE", pid.PatientName.GivenName);
+++        Assert.Equal("M", pid.PatientName.SecondAndFurtherGivenNamesOrInitials);
+++        Assert.Equal("JR", pid.PatientName.Suffix);
++         Assert.Equal("20140227", pid.DateOfBirth);
++-        Assert.Equal("2106-3^WHITE^HL70005", pid.Race);
+++        Assert.Equal("2106-3^WHITE^HL70005", (string)pid.Race);
+++        Assert.Equal("2106-3", pid.Race.Identifier);
+++        Assert.Equal("WHITE", pid.Race.Text);
++
++         var pd1 = message.GetSegment<PD1Segment>("PD1");
++         Assert.NotNull(pd1);
++@@ -84,8 +91,8 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
++
++         var nk1 = message.GetSegment<NK1Segment>("NK1");
++         Assert.NotNull(nk1);
++-        Assert.Equal("JONES^MARTHA", nk1.Name);
++-        Assert.Equal("MTH^MOTHER^HL70063", nk1.Relationship);
+++        Assert.Equal("JONES^MARTHA", (string)nk1.Name);
+++        Assert.Equal("MTH^MOTHER^HL70063", (string)nk1.Relationship);
++
++         var rxa = message.GetSegment<RXASegment>("RXA");
++         Assert.NotNull(rxa);
++@@ -118,7 +125,7 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
++
++         var pid = message.GetSegment<PIDSegment>("PID");
++         Assert.NotNull(pid);
++-        Assert.Equal("DOE^JOHN^J^JR", pid.PatientName);
+++        Assert.Equal("DOE^JOHN^J^JR", (string)pid.PatientName);
++         Assert.Equal("19800101", pid.DateOfBirth);
++
++         var rxa = message.GetSegment<RXASegment>("RXA");
++@@ -160,13 +167,13 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
++         Assert.NotNull(qpd);
++         Assert.Equal("Z34^Request Immunization History^CDCPHINVS", qpd.MessageQueryName);
++         Assert.Equal("CA0002", qpd.QueryTag);
++-        Assert.Equal("123456789^^^MR", qpd.PatientIdentifierList);
++-        Assert.Equal("DOE^JOHN^J^JR", qpd.PatientName);
++-        Assert.Equal("DOE^JANE", qpd.MothersMaidenName);
+++        Assert.Equal("123456789^^^MR", (string)qpd.PatientIdentifierList);
+++        Assert.Equal("DOE^JOHN^J^JR", (string)qpd.PatientName);
+++        Assert.Equal("DOE^JANE", (string)qpd.MothersMaidenName);
++         Assert.Equal("19800101", qpd.DateOfBirth);
++         Assert.Equal("M", qpd.AdministrativeSex);
++-        Assert.Equal("123 MAIN ST^^FRESNO^CA^93701^^H", qpd.PatientAddress);
++-        Assert.Equal("^PRN^PH^^^555^1234567", qpd.PhoneNumberHome);
+++        Assert.Equal("123 MAIN ST^^FRESNO^CA^93701^^H", (string)qpd.PatientAddress);
+++        Assert.Equal("^PRN^PH^^^555^1234567", (string)qpd.PhoneNumberHome);
++     }
++
++     [Fact]
++@@ -190,6 +197,6 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
++
++         var pid = message.GetSegment<PIDSegment>("PID");
++         Assert.NotNull(pid);
++-        Assert.Equal("DOE^JOHN^J^JR", pid.PatientName);
+++        Assert.Equal("DOE^JOHN^J^JR", (string)pid.PatientName);
++     }
++ }
+diff --git a/Cair2Hl7Parser/Cair2Hl7Parser.csproj b/Cair2Hl7Parser/Cair2Hl7Parser.csproj
+index 6c1dc92..2fe7293 100644
+--- a/Cair2Hl7Parser/Cair2Hl7Parser.csproj
++++ b/Cair2Hl7Parser/Cair2Hl7Parser.csproj
+@@ -7,4 +7,8 @@
+         <Nullable>enable</Nullable>
+     </PropertyGroup>
+
++    <ItemGroup>
++      <ProjectReference Include="..\Hl7.Core\Hl7.Core.csproj" />
++    </ItemGroup>
++
+ </Project>
+diff --git a/Cair2Hl7Parser/Program.cs b/Cair2Hl7Parser/Program.cs
+index b33e1bd..7ed0139 100644
+--- a/Cair2Hl7Parser/Program.cs
++++ b/Cair2Hl7Parser/Program.cs
+@@ -1,9 +1,30 @@
+-﻿namespace Cair2Hl7Parser;
++﻿using Hl7.Core;
++using Hl7.Core.Segments;
++
++namespace Cair2Hl7Parser;
+
+ class Program
+ {
+     static void Main(string[] args)
+     {
+         Console.WriteLine("Hello, World!");
++        var parser = new Hl7Parser();
++        var message = parser.ParseMessage("MSH|^~\\&|SendingSystem|SendingFacility|CAIR2|CDPH|20240901100000||VXU^V04^VXU_V04|MSGID001|P|2.5.1|||NE|NE|||CDPH_2_5_1|\nPID|1||PID123^^^MRN||DOE^JOHN^||20200101|M||2106-3^White^CD9^...|123 Main St^Anytown^CA^90000^USA^H||^PRN^PH^^1^555^5555|||||||...|2135-2^Hispanic or Latino^CD9^...|||||||\nPV1|1|R||||||||||||||||||||||||||||||||||||||||||\nORC|RE|||1234567890^CLINIC|||||||123456^DR^TEST^^^^^^NPI|||||||\nRXA|0|1|20240901|20240901|108^Influenza, seasonal, inactivated, nasal^CVX|0.5|mL^milliliters^UCUM||00^Administered^NIP001||||||||||||||\nRXR|C28161^Intranasal^NCIT|LA^Left Arm^HL70163|\nOBX|1|CE|64994-7^Vaccine CVX Code^LN|1|108^Influenza, seasonal, inactivated, nasal^CVX||||||F|||20240901|\nOBX|2|CE|30956-7^Vaccine Type^LN|2|108^Influenza, seasonal, inactivated, nasal^CVX||||||F|||20240901|\nOBX|3|CE|69764-9^Administered Date^LN|3|20240901||||||F|||20240901|\n");
++
++        PIDSegment? pid = message.GetSegment<PIDSegment>("PID");
++        RXASegment? rxa = message.GetSegment<RXASegment>("RXA");
++
++        if (pid != null)
++        {
++            Console.WriteLine("PID Segment Properties:");
++            foreach (var property in pid.GetType().GetProperties())
++            {
++                var value = property.GetValue(pid);
++                Console.WriteLine($"{property.Name}: {value}");
++            }
++
++            Console.WriteLine(pid.PatientAddress.City);
++            Console.WriteLine(pid.PatientAddress.StreetAddress);
++        }
+     }
+ }
+\ No newline at end of file
+diff --git a/Hl7.Core/Hl7Parser.cs b/Hl7.Core/Hl7Parser.cs
+index 597ad09..a00d0b9 100644
+--- a/Hl7.Core/Hl7Parser.cs
++++ b/Hl7.Core/Hl7Parser.cs
+@@ -3,6 +3,7 @@ using Hl7.Core.Base;
+ using Hl7.Core.Common;
+ using Hl7.Core.Segments;
+ using Hl7.Core.Utils;
++using Hl7.Core.Types;
+
+ namespace Hl7.Core;
+
+@@ -179,6 +180,12 @@ public class Hl7Parser
+             {
+                 entry.Property.SetValue(segment, rawValue);
+             }
++            else if (typeof(CompositeDataType).IsAssignableFrom(entry.Property.PropertyType))
++            {
++                var composite = (CompositeDataType)Activator.CreateInstance(entry.Property.PropertyType)!;
++                composite.Parse(rawValue, _separators.ComponentSeparator, _separators.SubComponentSeparator);
++                entry.Property.SetValue(segment, composite);
++            }
+         }
+
+         PopulateSegmentFields(segment, fields);
+@@ -194,22 +201,22 @@ public class Hl7Parser
+             AdministrationSubIdCounter = UnescapeField(GetField(fields, 2)),
+             DateTimeOfAdministration = UnescapeField(GetField(fields, 3)),
+             DateTimeOfAdministrationEnd = UnescapeField(GetField(fields, 4)),
+-            AdministeredCode = UnescapeField(GetField(fields, 5)),
++            AdministeredCode = new CE(UnescapeField(GetField(fields, 5))),
+             AdministeredAmount = UnescapeField(GetField(fields, 6)),
+-            AdministeredUnits = UnescapeField(GetField(fields, 7)),
++            AdministeredUnits = new CE(UnescapeField(GetField(fields, 7))),
+             AdministrationNotes = UnescapeField(GetField(fields, 9)),
+-            AdministeringProvider = UnescapeField(GetField(fields, 10)),
++            AdministeringProvider = new XPN(UnescapeField(GetField(fields, 10))),
+             AdministeredAtLocation = UnescapeField(GetField(fields, 11)),
+             AdministeredPer = UnescapeField(GetField(fields, 12)),
+             AdministeredStrength = UnescapeField(GetField(fields, 13)),
+             AdministeredStrengthUnits = UnescapeField(GetField(fields, 14)),
+             SubstanceLotNumber = UnescapeField(GetField(fields, 15)),
+             SubstanceExpirationDate = UnescapeField(GetField(fields, 16)),
+-            SubstanceManufacturerName = UnescapeField(GetField(fields, 17))
++            SubstanceManufacturerName = new CE(UnescapeField(GetField(fields, 17)))
+         };
+
+         if (fields.Length > 17)
+-            segment.SubstanceRefusalReason = UnescapeField(GetField(fields, 18));
++            segment.SubstanceRefusalReason = new CE(UnescapeField(GetField(fields, 18)));
+         if (fields.Length > 18)
+             segment.Indication = UnescapeField(GetField(fields, 19));
+         if (fields.Length > 19)
+@@ -227,7 +234,7 @@ public class Hl7Parser
+             segment.SubstanceLotNumber = field12;
+             segment.SubstanceExpirationDate = field13;
+             if (!string.IsNullOrWhiteSpace(field15))
+-                segment.SubstanceManufacturerName = field15;
++                segment.SubstanceManufacturerName = new CE(field15);
+         }
+         else if (string.IsNullOrWhiteSpace(segment.SubstanceLotNumber))
+         {
+@@ -237,7 +244,7 @@ public class Hl7Parser
+                 if (string.IsNullOrWhiteSpace(segment.SubstanceExpirationDate))
+                     segment.SubstanceExpirationDate = field13;
+                 if (string.IsNullOrWhiteSpace(segment.SubstanceManufacturerName))
+-                    segment.SubstanceManufacturerName = field15;
++                    segment.SubstanceManufacturerName = new CE(field15);
+             }
+         }
+
+diff --git a/Hl7.Core/Segments/NK1Segment.cs b/Hl7.Core/Segments/NK1Segment.cs
+index 65eda1e..c358cfc 100644
+--- a/Hl7.Core/Segments/NK1Segment.cs
++++ b/Hl7.Core/Segments/NK1Segment.cs
+@@ -1,6 +1,7 @@
+ using Hl7.Core.Base;
+ using Hl7.Core.Common;
+ using Hl7.Core.Utils;
++using Hl7.Core.Types;
+
+ namespace Hl7.Core.Segments;
+
+@@ -20,25 +21,25 @@ public class NK1Segment : Segment
+     /// Gets or sets the Name (NK1-2)
+     /// </summary>
+     [DataElement(2, "Name", ElementUsage.Optional)]
+-    public string Name { get; set; } = string.Empty;
++    public XPN Name { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Relationship (NK1-3)
+     /// </summary>
+     [DataElement(3, "Relationship", ElementUsage.Optional)]
+-    public string Relationship { get; set; } = string.Empty;
++    public CE Relationship { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Address (NK1-4)
+     /// </summary>
+     [DataElement(4, "Address", ElementUsage.Optional)]
+-    public string Address { get; set; } = string.Empty;
++    public XAD Address { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Phone Number (NK1-5)
+     /// </summary>
+     [DataElement(5, "Phone Number", ElementUsage.Optional)]
+-    public string PhoneNumber { get; set; } = string.Empty;
++    public XTN PhoneNumber { get; set; } = new();
+
+     /// <summary>
+     /// Initializes a new instance of the <see cref="NK1Segment"/> class
+diff --git a/Hl7.Core/Segments/OBRSegment.cs b/Hl7.Core/Segments/OBRSegment.cs
+index 04e6c2a..c9b7e54 100644
+--- a/Hl7.Core/Segments/OBRSegment.cs
++++ b/Hl7.Core/Segments/OBRSegment.cs
+@@ -1,6 +1,7 @@
+ using Hl7.Core.Base;
+ using Hl7.Core.Common;
+ using Hl7.Core.Utils;
++using Hl7.Core.Types;
+
+ namespace Hl7.Core.Segments;
+
+@@ -33,7 +34,7 @@ public class OBRSegment : Segment
+     /// Gets or sets the Universal Service ID (OBR-4)
+     /// </summary>
+     [DataElement(4, "Universal Service ID", ElementUsage.Optional)]
+-    public string UniversalServiceId { get; set; } = string.Empty;
++    public CE UniversalServiceId { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Priority (OBR-5)
+diff --git a/Hl7.Core/Segments/OBXSegment.cs b/Hl7.Core/Segments/OBXSegment.cs
+index 392daea..80a05e2 100644
+--- a/Hl7.Core/Segments/OBXSegment.cs
++++ b/Hl7.Core/Segments/OBXSegment.cs
+@@ -1,6 +1,7 @@
+ using Hl7.Core.Base;
+ using Hl7.Core.Common;
+ using Hl7.Core.Utils;
++using Hl7.Core.Types;
+
+ namespace Hl7.Core.Segments;
+
+@@ -27,7 +28,7 @@ public class OBXSegment : Segment
+     /// Gets or sets the Observation Identifier (OBX-3)
+     /// </summary>
+     [DataElement(3, "Observation Identifier", ElementUsage.Required)]
+-    public string ObservationIdentifier { get; set; } = string.Empty;
++    public CE ObservationIdentifier { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Observation Sub-ID (OBX-4)
+diff --git a/Hl7.Core/Segments/ORCSegment.cs b/Hl7.Core/Segments/ORCSegment.cs
+index b2d4d5a..2a593d6 100644
+--- a/Hl7.Core/Segments/ORCSegment.cs
++++ b/Hl7.Core/Segments/ORCSegment.cs
+@@ -1,6 +1,7 @@
+ using Hl7.Core.Base;
+ using Hl7.Core.Common;
+ using Hl7.Core.Utils;
++using Hl7.Core.Types;
+
+ namespace Hl7.Core.Segments;
+
+@@ -32,19 +33,19 @@ public class ORCSegment : Segment
+     /// Gets or sets the person who entered the order (ORC-10)
+     /// </summary>
+     [DataElement(10, "Entered By", ElementUsage.RequiredButMayBeEmpty)]
+-    public string EnteredBy { get; set; } = string.Empty;
++    public XPN EnteredBy { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the ordering provider (ORC-12)
+     /// </summary>
+     [DataElement(12, "Ordering Provider", ElementUsage.RequiredButMayBeEmpty)]
+-    public string OrderingProvider { get; set; } = string.Empty;
++    public XPN OrderingProvider { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the entering organization (ORC-17)
+     /// </summary>
+     [DataElement(17, "Entering Organization", ElementUsage.RequiredButMayBeEmpty)]
+-    public string EnteringOrganization { get; set; } = string.Empty;
++    public CE EnteringOrganization { get; set; } = new();
+
+     /// <summary>
+     /// Initializes a new instance of the <see cref="ORCSegment"/> class
+diff --git a/Hl7.Core/Segments/PIDSegment.cs b/Hl7.Core/Segments/PIDSegment.cs
+index ba6a447..f2bde36 100644
+--- a/Hl7.Core/Segments/PIDSegment.cs
++++ b/Hl7.Core/Segments/PIDSegment.cs
+@@ -1,6 +1,7 @@
+ using Hl7.Core.Base;
+ using Hl7.Core.Common;
+ using Hl7.Core.Utils;
++using Hl7.Core.Types;
+
+ namespace Hl7.Core.Segments;
+
+@@ -26,25 +27,25 @@ public class PIDSegment : Segment
+     /// Gets or sets the Patient Identifier List (PID-3)
+     /// </summary>
+     [DataElement(3, "Patient Identifier List", ElementUsage.Optional)]
+-    public string PatientIdentifierList { get; set; } = string.Empty;
++    public CX PatientIdentifierList { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Alternate Patient ID - PID (PID-4)
+     /// </summary>
+     [DataElement(4, "Alternate Patient ID - PID", ElementUsage.Optional)]
+-    public string AlternatePatientId { get; set; } = string.Empty;
++    public CX AlternatePatientId { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Patient Name (PID-5)
+     /// </summary>
+     [DataElement(5, "Patient Name", ElementUsage.Optional)]
+-    public string PatientName { get; set; } = string.Empty;
++    public XPN PatientName { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Mother's Maiden Name (PID-6)
+     /// </summary>
+     [DataElement(6, "Mother's Maiden Name", ElementUsage.Optional)]
+-    public string MothersMaidenName { get; set; } = string.Empty;
++    public XPN MothersMaidenName { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Date/Time of Birth (PID-7)
+@@ -62,13 +63,13 @@ public class PIDSegment : Segment
+     /// Gets or sets the Race (PID-10)
+     /// </summary>
+     [DataElement(10, "Race", ElementUsage.Optional)]
+-    public string Race { get; set; } = string.Empty;
++    public CE Race { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Patient Address (PID-11)
+     /// </summary>
+     [DataElement(11, "Patient Address", ElementUsage.Optional)]
+-    public string PatientAddress { get; set; } = string.Empty;
++    public XAD PatientAddress { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the County Code (PID-12)
+@@ -80,19 +81,19 @@ public class PIDSegment : Segment
+     /// Gets or sets the Phone Number - Home (PID-13)
+     /// </summary>
+     [DataElement(13, "Phone Number - Home", ElementUsage.Optional)]
+-    public string PhoneNumberHome { get; set; } = string.Empty;
++    public XTN PhoneNumberHome { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Phone Number - Business (PID-14)
+     /// </summary>
+     [DataElement(14, "Phone Number - Business", ElementUsage.Optional)]
+-    public string PhoneNumberBusiness { get; set; } = string.Empty;
++    public XTN PhoneNumberBusiness { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Primary Language (PID-15)
+     /// </summary>
+     [DataElement(15, "Primary Language", ElementUsage.Optional)]
+-    public string PrimaryLanguage { get; set; } = string.Empty;
++    public CE PrimaryLanguage { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Marital Status (PID-16)
+@@ -122,7 +123,7 @@ public class PIDSegment : Segment
+     /// Gets or sets the Ethnic Group (PID-22)
+     /// </summary>
+     [DataElement(22, "Ethnic Group", ElementUsage.Optional)]
+-    public string EthnicGroup { get; set; } = string.Empty;
++    public CE EthnicGroup { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Birth Place (PID-23)
+diff --git a/Hl7.Core/Segments/QPDSegment.cs b/Hl7.Core/Segments/QPDSegment.cs
+index 963c23e..204944e 100644
+--- a/Hl7.Core/Segments/QPDSegment.cs
++++ b/Hl7.Core/Segments/QPDSegment.cs
+@@ -1,9 +1,9 @@
+ using Hl7.Core.Common;
+-
+-namespace Hl7.Core.Segments;
+-
+ using Hl7.Core.Base;
+ using Hl7.Core.Utils;
++using Hl7.Core.Types;
++
++namespace Hl7.Core.Segments;
+
+ /// <summary>
+ /// QPD - Query Parameter Definition Segment
+@@ -15,7 +15,7 @@ public class QPDSegment : Segment
+     /// Gets or sets the message query name (QPD-1)
+     /// </summary>
+     [DataElement(1, "Message Query Name", ElementUsage.Required)]
+-    public string MessageQueryName { get; set; } = string.Empty;
++    public CE MessageQueryName { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the query tag (QPD-2)
+@@ -27,19 +27,19 @@ public class QPDSegment : Segment
+     /// Gets or sets the patient identifier list (QPD-3)
+     /// </summary>
+     [DataElement(3, "Patient List", ElementUsage.RequiredButMayBeEmpty)]
+-    public string PatientIdentifierList { get; set; } = string.Empty;
++    public CX PatientIdentifierList { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the patient name (QPD-4)
+     /// </summary>
+     [DataElement(4, "Patient Name", ElementUsage.Required)]
+-    public string PatientName { get; set; } = string.Empty;
++    public XPN PatientName { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the mother's maiden name (QPD-5)
+     /// </summary>
+     [DataElement(5, "Mother's Maiden Name", ElementUsage.RequiredButMayBeEmpty)]
+-    public string MothersMaidenName { get; set; } = string.Empty;
++    public XPN MothersMaidenName { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the date/time of birth (QPD-6)
+@@ -57,13 +57,13 @@ public class QPDSegment : Segment
+     /// Gets or sets the patient address (QPD-8)
+     /// </summary>
+     [DataElement(8, "Patient Address", ElementUsage.Required)]
+-    public string PatientAddress { get; set; } = string.Empty;
++    public XAD PatientAddress { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the home phone number (QPD-9)
+     /// </summary>
+     [DataElement(9, "Phone Number - Home", ElementUsage.RequiredButMayBeEmpty)]
+-    public string PhoneNumberHome { get; set; } = string.Empty;
++    public XTN PhoneNumberHome { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the multiple birth indicator (QPD-10)
+diff --git a/Hl7.Core/Segments/RXASegment.cs b/Hl7.Core/Segments/RXASegment.cs
+index a7e3ce4..2603861 100644
+--- a/Hl7.Core/Segments/RXASegment.cs
++++ b/Hl7.Core/Segments/RXASegment.cs
+@@ -1,6 +1,7 @@
+ using Hl7.Core.Base;
+ using Hl7.Core.Common;
+ using Hl7.Core.Utils;
++using Hl7.Core.Types;
+
+ namespace Hl7.Core.Segments;
+
+@@ -39,7 +40,7 @@ public class RXASegment : Segment
+     /// Gets or sets the Administered Code (RXA-5)
+     /// </summary>
+     [DataElement(5, "Administered Code", ElementUsage.Required)]
+-    public string AdministeredCode { get; set; } = string.Empty;
++    public CE AdministeredCode { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Administered Amount (RXA-6)
+@@ -51,7 +52,7 @@ public class RXASegment : Segment
+     /// Gets or sets the Administered Units (RXA-7)
+     /// </summary>
+     [DataElement(7, "Administered Units", ElementUsage.RequiredButMayBeEmpty)]
+-    public string AdministeredUnits { get; set; } = string.Empty;
++    public CE AdministeredUnits { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Administration Notes (RXA-9)
+@@ -63,7 +64,7 @@ public class RXASegment : Segment
+     /// Gets or sets the Administering Provider (RXA-10)
+     /// </summary>
+     [DataElement(10, "Administering Provider", ElementUsage.RequiredButMayBeEmpty)]
+-    public string AdministeringProvider { get; set; } = string.Empty;
++    public XPN AdministeringProvider { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Administered at Location (RXA-11)
+@@ -105,13 +106,13 @@ public class RXASegment : Segment
+     /// Gets or sets the Substance Manufacturer Name (RXA-17)
+     /// </summary>
+     [DataElement(17, "Substance Manufacturer Name", ElementUsage.RequiredButMayBeEmpty)]
+-    public string SubstanceManufacturerName { get; set; } = string.Empty;
++    public CE SubstanceManufacturerName { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Substance Refusal Reason (RXA-18)
+     /// </summary>
+     [DataElement(18, "Substance Refusal Reason", ElementUsage.Optional)]
+-    public string SubstanceRefusalReason { get; set; } = string.Empty;
++    public CE SubstanceRefusalReason { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the Indication (RXA-19)
+diff --git a/Hl7.Core/Segments/RXRSegment.cs b/Hl7.Core/Segments/RXRSegment.cs
+index 11a588f..9acf269 100644
+--- a/Hl7.Core/Segments/RXRSegment.cs
++++ b/Hl7.Core/Segments/RXRSegment.cs
+@@ -1,6 +1,7 @@
+ using Hl7.Core.Base;
+ using Hl7.Core.Common;
+ using Hl7.Core.Utils;
++using Hl7.Core.Types;
+
+ namespace Hl7.Core.Segments;
+
+@@ -14,13 +15,13 @@ public class RXRSegment : Segment
+     /// Gets or sets the route (RXR-1)
+     /// </summary>
+     [DataElement(1, "Route", ElementUsage.RequiredButMayBeEmpty)]
+-    public string Route { get; set; } = string.Empty;
++    public CE Route { get; set; } = new();
+
+     /// <summary>
+     /// Gets or sets the administration site (RXR-2)
+     /// </summary>
+     [DataElement(2, "Administration Site", ElementUsage.RequiredButMayBeEmpty)]
+-    public string AdministrationSite { get; set; } = string.Empty;
++    public CE AdministrationSite { get; set; } = new();
+
+     /// <summary>
+     /// Initializes a new instance of the <see cref="RXRSegment"/> class
+diff --git a/Hl7.Core/Types/CompositeDataType.cs b/Hl7.Core/Types/CompositeDataType.cs
+index 5bc94ff..d91cc89 100644
+--- a/Hl7.Core/Types/CompositeDataType.cs
++++ b/Hl7.Core/Types/CompositeDataType.cs
+@@ -20,6 +20,15 @@ public class CompositeDataType
+     /// </summary>
+     public CompositeDataType() { }
+
++    /// <summary>
++    /// Initializes a new instance of the <see cref="CompositeDataType"/> class with a value
++    /// </summary>
++    /// <param name="value">The composite field value</param>
++    public CompositeDataType(string value)
++    {
++        Parse(value, '^', '&');
++    }
++
+     /// <summary>
+     /// Initializes a new instance of the <see cref="CompositeDataType"/> class by parsing a value
+     /// </summary>
+@@ -77,4 +86,16 @@ public class CompositeDataType
+     /// </summary>
+     /// <returns>The composite field string</returns>
+     public override string ToString() => string.Join("^", Components);
++
++    /// <summary>
++    /// Implicit conversion from string to CompositeDataType
++    /// </summary>
++    public static implicit operator string(CompositeDataType composite) => composite?.ToString() ?? string.Empty;
++
++    /// <summary>
++    /// Implicit conversion from CompositeDataType to string
++    /// </summary>
++    public static implicit operator CompositeDataType(string value) => new CompositeDataType(value);
++
++    public bool Contains(string value) => ToString().Contains(value);
+ }
+diff --git a/Hl7Test/CAIR2SpecificationTests.cs b/Hl7Test/CAIR2SpecificationTests.cs
+index 7431068..1fd3919 100644
+--- a/Hl7Test/CAIR2SpecificationTests.cs
++++ b/Hl7Test/CAIR2SpecificationTests.cs
+@@ -3,6 +3,7 @@ using Hl7.Core.CAIR2;
+ using Hl7.Core.Segments;
+ using Hl7.Core.Base;
+ using Hl7.Core.Common;
++using Hl7.Core.Types;
+
+ namespace Hl7Test;
+
+@@ -74,9 +75,15 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
+
+         var pid = message.GetSegment<PIDSegment>("PID");
+         Assert.NotNull(pid);
+-        Assert.Equal("JONES^GEORGE^M^JR", pid.PatientName);
++        Assert.Equal("JONES^GEORGE^M^JR", (string)pid.PatientName);
++        Assert.Equal("JONES", pid.PatientName.FamilyName);
++        Assert.Equal("GEORGE", pid.PatientName.GivenName);
++        Assert.Equal("M", pid.PatientName.SecondAndFurtherGivenNamesOrInitials);
++        Assert.Equal("JR", pid.PatientName.Suffix);
+         Assert.Equal("20140227", pid.DateOfBirth);
+-        Assert.Equal("2106-3^WHITE^HL70005", pid.Race);
++        Assert.Equal("2106-3^WHITE^HL70005", (string)pid.Race);
++        Assert.Equal("2106-3", pid.Race.Identifier);
++        Assert.Equal("WHITE", pid.Race.Text);
+
+         var pd1 = message.GetSegment<PD1Segment>("PD1");
+         Assert.NotNull(pd1);
+@@ -84,8 +91,8 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
+
+         var nk1 = message.GetSegment<NK1Segment>("NK1");
+         Assert.NotNull(nk1);
+-        Assert.Equal("JONES^MARTHA", nk1.Name);
+-        Assert.Equal("MTH^MOTHER^HL70063", nk1.Relationship);
++        Assert.Equal("JONES^MARTHA", (string)nk1.Name);
++        Assert.Equal("MTH^MOTHER^HL70063", (string)nk1.Relationship);
+
+         var rxa = message.GetSegment<RXASegment>("RXA");
+         Assert.NotNull(rxa);
+@@ -118,7 +125,7 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
+
+         var pid = message.GetSegment<PIDSegment>("PID");
+         Assert.NotNull(pid);
+-        Assert.Equal("DOE^JOHN^J^JR", pid.PatientName);
++        Assert.Equal("DOE^JOHN^J^JR", (string)pid.PatientName);
+         Assert.Equal("19800101", pid.DateOfBirth);
+
+         var rxa = message.GetSegment<RXASegment>("RXA");
+@@ -160,13 +167,13 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
+         Assert.NotNull(qpd);
+         Assert.Equal("Z34^Request Immunization History^CDCPHINVS", qpd.MessageQueryName);
+         Assert.Equal("CA0002", qpd.QueryTag);
+-        Assert.Equal("123456789^^^MR", qpd.PatientIdentifierList);
+-        Assert.Equal("DOE^JOHN^J^JR", qpd.PatientName);
+-        Assert.Equal("DOE^JANE", qpd.MothersMaidenName);
++        Assert.Equal("123456789^^^MR", (string)qpd.PatientIdentifierList);
++        Assert.Equal("DOE^JOHN^J^JR", (string)qpd.PatientName);
++        Assert.Equal("DOE^JANE", (string)qpd.MothersMaidenName);
+         Assert.Equal("19800101", qpd.DateOfBirth);
+         Assert.Equal("M", qpd.AdministrativeSex);
+-        Assert.Equal("123 MAIN ST^^FRESNO^CA^93701^^H", qpd.PatientAddress);
+-        Assert.Equal("^PRN^PH^^^555^1234567", qpd.PhoneNumberHome);
++        Assert.Equal("123 MAIN ST^^FRESNO^CA^93701^^H", (string)qpd.PatientAddress);
++        Assert.Equal("^PRN^PH^^^555^1234567", (string)qpd.PhoneNumberHome);
+     }
+
+     [Fact]
+@@ -190,6 +197,6 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
+
+         var pid = message.GetSegment<PIDSegment>("PID");
+         Assert.NotNull(pid);
+-        Assert.Equal("DOE^JOHN^J^JR", pid.PatientName);
++        Assert.Equal("DOE^JOHN^J^JR", (string)pid.PatientName);
+     }
+ }

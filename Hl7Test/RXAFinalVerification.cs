@@ -21,6 +21,7 @@ public class RXAFinalVerification
         parser.ParseMSHSegment(mshLine);
         
         var rxa = parser.ParseSegment(rxaLine) as RXASegment;
+        Assert.NotNull(rxa);
         
         Console.WriteLine("=== FINAL RXA VERIFICATION ===\n");
         
@@ -91,6 +92,12 @@ OBX|1|CE|38890-0^COMPONENT VACCINE TYPE^LN|1|45^HepB^CVX^90731^HepB^CPT||||||F";
         var rxa = message.GetSegment<RXASegment>("RXA");
 
         Console.WriteLine("\n=== FULL MESSAGE PARSING TEST ===\n");
+        if (rxa == null)
+        {
+            Assert.Fail("RXA segment not found");
+            return;
+        }
+
         Console.WriteLine($"RXA Segment found: {rxa != null}");
         
         if (rxa != null)
@@ -107,7 +114,7 @@ OBX|1|CE|38890-0^COMPONENT VACCINE TYPE^LN|1|45^HepB^CVX^90731^HepB^CPT||||||F";
         }
         else
         {
-            Assert.True(false, "RXA segment not found");
+            Assert.Fail("RXA segment not found");
         }
     }
 

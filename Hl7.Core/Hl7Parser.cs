@@ -3,14 +3,21 @@ using Hl7.Core.Base;
 using Hl7.Core.Common;
 using Hl7.Core.Segments;
 using Hl7.Core.Utils;
+using Hl7.Core.Types;
 
 namespace Hl7.Core;
 
+/// <summary>
+/// Parses and manipulates HL7 messages
+/// </summary>
 public class Hl7Parser
 {
     private Hl7Separators _separators = new();
     private const string DefaultFieldSeparator = "|";
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Hl7Parser"/> class
+    /// </summary>
     public Hl7Parser()
     {
         // Initialize with default separators
@@ -22,8 +29,8 @@ public class Hl7Parser
     /// </summary>
     public Hl7Message ParseMessage(string hl7Message)
     {
-        if (string.IsNullOrWhiteSpace(hl7Message))
-            throw new ArgumentException("HL7 message cannot be null or empty");
+        if (string.IsNullOrEmpty(hl7Message))
+            return new Hl7Message();
 
         var message = new Hl7Message();
         var lines = hl7Message.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -66,11 +73,14 @@ public class Hl7Parser
         // Extract separators from the MSH segment
         _separators = Hl7Separators.ParseFromMSH(segmentLine);
         
-        var fields = SplitFields(segmentLine, _separators.FieldSeparator);
+        // MSH is special. The field separator is the 4th character (index 3).
+        var fieldSeparator = segmentLine[3];
         
-        // HL7v2 MSH Special Case: After splitting by |, array indices are:
-        // [0] = "MSH", [1] = encoding chars, [2] = SendingApplication, [3] = SendingFacility, ...
-        // So we need to use [index+1] to get the right HL7 field
+        // In HL7, MSH is the only segment where the segment ID is followed immediately by the field separator,
+        // and that separator itself is MSH-1.
+        // segmentLine: "MSH|^~\\&|..."
+        // fields: ["MSH", "^~\\&", "...", ...]
+        var fields = segmentLine.Split(fieldSeparator);
         
         var mshSegment = new MSHSegment
         {
@@ -98,9 +108,10 @@ public class Hl7Parser
         };
 
         mshSegment.Fields = new Dictionary<int, string>();
+        mshSegment.Fields[1] = fieldSeparator.ToString(); // MSH-1 is the separator
         for (int i = 1; i < fields.Length; i++)
         {
-            mshSegment.Fields[i] = UnescapeField(fields[i]);
+            mshSegment.Fields[i + 1] = UnescapeField(fields[i]);
         }
 
         return mshSegment;
@@ -169,6 +180,12 @@ public class Hl7Parser
             {
                 entry.Property.SetValue(segment, rawValue);
             }
+            else if (typeof(CompositeDataType).IsAssignableFrom(entry.Property.PropertyType))
+            {
+                var composite = (CompositeDataType)Activator.CreateInstance(entry.Property.PropertyType)!;
+                composite.Parse(rawValue, _separators.ComponentSeparator, _separators.SubComponentSeparator);
+                entry.Property.SetValue(segment, composite);
+            }
         }
 
         PopulateSegmentFields(segment, fields);
@@ -184,22 +201,22 @@ public class Hl7Parser
             AdministrationSubIdCounter = UnescapeField(GetField(fields, 2)),
             DateTimeOfAdministration = UnescapeField(GetField(fields, 3)),
             DateTimeOfAdministrationEnd = UnescapeField(GetField(fields, 4)),
-            AdministeredCode = UnescapeField(GetField(fields, 5)),
+            AdministeredCode = new CE(UnescapeField(GetField(fields, 5))),
             AdministeredAmount = UnescapeField(GetField(fields, 6)),
-            AdministeredUnits = UnescapeField(GetField(fields, 7)),
+            AdministeredUnits = new CE(UnescapeField(GetField(fields, 7))),
             AdministrationNotes = UnescapeField(GetField(fields, 9)),
-            AdministeringProvider = UnescapeField(GetField(fields, 10)),
+            AdministeringProvider = new XPN(UnescapeField(GetField(fields, 10))),
             AdministeredAtLocation = UnescapeField(GetField(fields, 11)),
             AdministeredPer = UnescapeField(GetField(fields, 12)),
             AdministeredStrength = UnescapeField(GetField(fields, 13)),
             AdministeredStrengthUnits = UnescapeField(GetField(fields, 14)),
             SubstanceLotNumber = UnescapeField(GetField(fields, 15)),
             SubstanceExpirationDate = UnescapeField(GetField(fields, 16)),
-            SubstanceManufacturerName = UnescapeField(GetField(fields, 17))
+            SubstanceManufacturerName = new CE(UnescapeField(GetField(fields, 17)))
         };
 
         if (fields.Length > 17)
-            segment.SubstanceRefusalReason = UnescapeField(GetField(fields, 18));
+            segment.SubstanceRefusalReason = new CE(UnescapeField(GetField(fields, 18)));
         if (fields.Length > 18)
             segment.Indication = UnescapeField(GetField(fields, 19));
         if (fields.Length > 19)
@@ -217,7 +234,7 @@ public class Hl7Parser
             segment.SubstanceLotNumber = field12;
             segment.SubstanceExpirationDate = field13;
             if (!string.IsNullOrWhiteSpace(field15))
-                segment.SubstanceManufacturerName = field15;
+                segment.SubstanceManufacturerName = new CE(field15);
         }
         else if (string.IsNullOrWhiteSpace(segment.SubstanceLotNumber))
         {
@@ -227,7 +244,7 @@ public class Hl7Parser
                 if (string.IsNullOrWhiteSpace(segment.SubstanceExpirationDate))
                     segment.SubstanceExpirationDate = field13;
                 if (string.IsNullOrWhiteSpace(segment.SubstanceManufacturerName))
-                    segment.SubstanceManufacturerName = field15;
+                    segment.SubstanceManufacturerName = new CE(field15);
             }
         }
 
@@ -255,10 +272,7 @@ public class Hl7Parser
     private Segment ParseGenericSegment(string segmentId, string[] fields)
     {
         var segment = new Segment(segmentId);
-        for (int i = 1; i < fields.Length; i++)
-        {
-            segment.Fields[i - 1] = UnescapeField(fields[i]);
-        }
+        PopulateSegmentFields(segment, fields);
         return segment;
     }
 

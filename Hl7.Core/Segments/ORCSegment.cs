@@ -63,7 +63,7 @@ public class ORCSegment : Segment
     /// Gets or sets the date/time of transaction (ORC-9)
     /// </summary>
     [DataElement(9, "Date/Time of Transaction", ElementUsage.Optional)]
-    public string DateTimeOfTransaction { get; set; } = string.Empty;
+    public TSU DateTimeOfTransaction { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the person who entered the order (ORC-10)
@@ -76,6 +76,12 @@ public class ORCSegment : Segment
     /// </summary>
     [DataElement(12, "Ordering Provider", ElementUsage.RequiredButMayBeEmpty)]
     public XPN OrderingProvider { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the Enterer's Location (ORC-13)
+    /// </summary>
+    [DataElement(13, "Enterer's Location", ElementUsage.Optional)]
+    public string EnterersLocation { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the entering organization (ORC-17)

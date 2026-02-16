@@ -28,13 +28,13 @@ public class RXASegment : Segment
     /// Gets or sets the Date/Time Start of Administration (RXA-3)
     /// </summary>
     [DataElement(3, "Date/Time Start of Administration", ElementUsage.Required)]
-    public string DateTimeOfAdministration { get; set; } = string.Empty;
+    public TSU DateTimeOfAdministration { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Date/Time End of Administration (RXA-4)
     /// </summary>
     [DataElement(4, "Date/Time End of Administration", ElementUsage.Required)]
-    public string DateTimeOfAdministrationEnd { get; set; } = string.Empty;
+    public TSU DateTimeOfAdministrationEnd { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Administered Code (RXA-5)
@@ -53,6 +53,12 @@ public class RXASegment : Segment
     /// </summary>
     [DataElement(7, "Administered Units", ElementUsage.RequiredButMayBeEmpty)]
     public CE AdministeredUnits { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the Administered Dosage Form (RXA-8)
+    /// </summary>
+    [DataElement(8, "Administered Dosage Form", ElementUsage.Optional)]
+    public CE AdministeredDosageForm { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Administration Notes (RXA-9)
@@ -75,19 +81,19 @@ public class RXASegment : Segment
     /// <summary>
     /// Gets or sets the Administered Per (Time Unit) (RXA-12)
     /// </summary>
-    [DataElement(12, "Administered Per (Time Unit)", ElementUsage.RequiredButMayBeEmpty)]
+    [DataElement(12, "Administered Per (Time Unit)", ElementUsage.NotSupported)]
     public string AdministeredPer { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the Administered Strength (RXA-13)
     /// </summary>
-    [DataElement(13, "Administered Strength", ElementUsage.RequiredButMayBeEmpty)]
+    [DataElement(13, "Administered Strength", ElementUsage.NotSupported)]
     public string AdministeredStrength { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the Administered Strength Units (RXA-14)
     /// </summary>
-    [DataElement(14, "Administered Strength Units", ElementUsage.RequiredButMayBeEmpty)]
+    [DataElement(14, "Administered Strength Units", ElementUsage.NotSupported)]
     public string AdministeredStrengthUnits { get; set; } = string.Empty;
 
     /// <summary>
@@ -100,7 +106,7 @@ public class RXASegment : Segment
     /// Gets or sets the Substance Expiration Date (RXA-16)
     /// </summary>
     [DataElement(16, "Substance Expiration Date", ElementUsage.RequiredButMayBeEmpty)]
-    public string SubstanceExpirationDate { get; set; } = string.Empty;
+    public TSU SubstanceExpirationDate { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Substance Manufacturer Name (RXA-17)
@@ -118,7 +124,7 @@ public class RXASegment : Segment
     /// Gets or sets the Indication (RXA-19)
     /// </summary>
     [DataElement(19, "Indication", ElementUsage.RequiredButMayBeEmpty)]
-    public string Indication { get; set; } = string.Empty;
+    public CE Indication { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Completion Status (RXA-20)
@@ -136,7 +142,7 @@ public class RXASegment : Segment
     /// Gets or sets the System Entry Date/Time (RXA-22)
     /// </summary>
     [DataElement(22, "System Entry Date/Time", ElementUsage.Optional)]
-    public string SystemEntryDateTime { get; set; } = string.Empty;
+    public TSU SystemEntryDateTime { get; set; } = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RXASegment"/> class

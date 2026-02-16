@@ -82,7 +82,7 @@ public class OBXSegment : Segment
     /// Gets or sets the Date/Time of Observation (OBX-12)
     /// </summary>
     [DataElement(12, "Date/Time of Observation", ElementUsage.Optional)]
-    public string DateTimeOfObservation { get; set; } = string.Empty;
+    public TSU DateTimeOfObservation { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Producer's Reference (OBX-13)
@@ -100,12 +100,12 @@ public class OBXSegment : Segment
     /// Gets or sets the Observation Method (OBX-15)
     /// </summary>
     [DataElement(15, "Observation Method", ElementUsage.Optional)]
-    public string ObservationMethod { get; set; } = string.Empty;
+    public CE ObservationMethod { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Responsible Observer (OBX-16)
     /// </summary>
-    [DataElement(16, "Responsible Observer", ElementUsage.Optional)]
+    [DataElement(16, "Responsible Observer (XPN)", ElementUsage.Optional)]
     public XPN ResponsibleObserverXpn { get; set; } = new();
 
     /// <summary>
@@ -118,13 +118,41 @@ public class OBXSegment : Segment
     /// Gets or sets the Equipment Instance Identifier (OBX-18)
     /// </summary>
     [DataElement(18, "Equipment Instance Identifier", ElementUsage.Optional)]
-    public string EquipmentInstanceIdentifier { get; set; } = string.Empty;
+    public EI EquipmentInstanceIdentifier { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Date/Time of the Analysis (OBX-19)
     /// </summary>
     [DataElement(19, "Date/Time of the Analysis", ElementUsage.Optional)]
-    public string DateTimeOfTheAnalysis { get; set; } = string.Empty;
+    public TSU DateTimeOfTheAnalysis { get; set; } = new();
+
+    /// <summary>
+    /// Gets the type of a field at the specified position
+    /// </summary>
+    /// <param name="position">The 1-based position of the field</param>
+    /// <returns>The field type</returns>
+    public new Type GetFieldType(int position)
+    {
+        if (position == 5)
+        {
+            // Special handling for VFC Eligibility (OBX-3 is 64994-7)
+            if (ObservationIdentifier?.Identifier == "64994-7")
+            {
+                return typeof(VFC);
+            }
+
+            return ValueType switch
+            {
+                "CE" => typeof(CE),
+                "XPN" => typeof(XPN),
+                "XAD" => typeof(XAD),
+                "XTN" => typeof(XTN),
+                "TS" => typeof(TSU),
+                _ => typeof(string)
+            };
+        }
+        return base.GetFieldType(position);
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OBXSegment"/> class

@@ -1,6 +1,187 @@
 namespace Hl7.Core.Types;
 
 /// <summary>
+/// EI - Entity Identifier
+/// </summary>
+public class EI : CompositeDataType
+{
+    /// <summary>
+    /// Gets the entity identifier
+    /// </summary>
+    public string EntityIdentifier => GetComponent(0);
+
+    /// <summary>
+    /// Gets the namespace ID
+    /// </summary>
+    public string NamespaceId => GetComponent(1);
+
+    /// <summary>
+    /// Gets the universal ID
+    /// </summary>
+    public string UniversalId => GetComponent(2);
+
+    /// <summary>
+    /// Gets the universal ID type
+    /// </summary>
+    public string UniversalIdType => GetComponent(3);
+
+    public EI() { }
+    public EI(string value) : base(value) { }
+    public EI(string value, char componentSeparator, char subComponentSeparator) 
+        : base(value, componentSeparator, subComponentSeparator) { }
+
+    public static implicit operator EI(string value) => new EI(value);
+
+    public override string GetComponentName(int index) => index switch
+    {
+        0 => "Entity Identifier",
+        1 => "Namespace ID",
+        2 => "Universal ID",
+        3 => "Universal ID Type",
+        _ => base.GetComponentName(index)
+    };
+}
+
+/// <summary>
+/// HD - Hierarchic Designator
+/// </summary>
+public class HD : CompositeDataType
+{
+    /// <summary>
+    /// Gets the namespace ID
+    /// </summary>
+    public string NamespaceId => GetComponent(0);
+
+    /// <summary>
+    /// Gets the universal ID
+    /// </summary>
+    public string UniversalId => GetComponent(1);
+
+    /// <summary>
+    /// Gets the universal ID type
+    /// </summary>
+    public string UniversalIdType => GetComponent(2);
+
+    public HD() { }
+    public HD(string value) : base(value) { }
+    public HD(string value, char componentSeparator, char subComponentSeparator) 
+        : base(value, componentSeparator, subComponentSeparator) { }
+
+    public static implicit operator HD(string value) => new HD(value);
+
+    public override string GetComponentName(int index) => index switch
+    {
+        0 => "Namespace ID",
+        1 => "Universal ID",
+        2 => "Universal ID Type",
+        _ => base.GetComponentName(index)
+    };
+}
+
+/// <summary>
+/// SAD - Street Address
+/// </summary>
+public class SAD : CompositeDataType
+{
+    /// <summary>
+    /// Gets the street or mailing address
+    /// </summary>
+    public string StreetOrMailingAddress => GetComponent(0);
+
+    /// <summary>
+    /// Gets the street name
+    /// </summary>
+    public string StreetName => GetComponent(1);
+
+    /// <summary>
+    /// Gets the dwelling number
+    /// </summary>
+    public string DwellingNumber => GetComponent(2);
+
+    public SAD() { }
+    public SAD(string value) : base(value) { }
+    public SAD(string value, char componentSeparator, char subComponentSeparator) 
+        : base(value, componentSeparator, subComponentSeparator) { }
+
+    public static implicit operator SAD(string value) => new SAD(value);
+
+    public override string GetComponentName(int index) => index switch
+    {
+        0 => "Street or Mailing Address",
+        1 => "Street Name",
+        2 => "Dwelling Number",
+        _ => base.GetComponentName(index)
+    };
+}
+
+/// <summary>
+/// TSU - Time Stamp
+/// </summary>
+public class TSU : CompositeDataType
+{
+    /// <summary>
+    /// Gets the time
+    /// </summary>
+    public string Time => GetComponent(0);
+
+    /// <summary>
+    /// Gets the degree of precision
+    /// </summary>
+    public string DegreeOfPrecision => GetComponent(1);
+
+    public TSU() { }
+    public TSU(string value) : base(value) { }
+    public TSU(string value, char componentSeparator, char subComponentSeparator) 
+        : base(value, componentSeparator, subComponentSeparator) { }
+
+    public static implicit operator TSU(string value) => new TSU(value);
+
+    public override string GetComponentName(int index) => index switch
+    {
+        0 => "Time",
+        1 => "Degree of Precision",
+        _ => base.GetComponentName(index)
+    };
+}
+
+/// <summary>
+/// LA1 - Location with Address Variation 1
+/// </summary>
+public class LA1 : CompositeDataType
+{
+    public string PointOfCare => GetComponent(0);
+    public string Room => GetComponent(1);
+    public string Bed => GetComponent(2);
+    public HD Facility => new HD(GetComponent(3));
+    public string LocationStatus => GetComponent(4);
+    public string PersonLocationType => GetComponent(5);
+    public string Building => GetComponent(6);
+    public string Floor => GetComponent(7);
+    public string AddressText => GetComponent(8);
+
+    public LA1() { }
+    public LA1(string value) : base(value) { }
+    public LA1(string value, char componentSeparator, char subComponentSeparator) 
+        : base(value, componentSeparator, subComponentSeparator) { }
+
+    public static implicit operator LA1(string value) => new LA1(value);
+
+    public override string GetComponentName(int index) => index switch
+    {
+        0 => "Point of Care",
+        1 => "Room",
+        2 => "Bed",
+        3 => "Facility",
+        4 => "Location Status",
+        5 => "Person Location Type",
+        6 => "Building",
+        7 => "Floor",
+        8 => "Address Text",
+        _ => base.GetComponentName(index)
+    };
+}
+
+/// <summary>
 /// CE - Coded Element
 /// </summary>
 public class CE : CompositeDataType
@@ -69,6 +250,39 @@ public class CE : CompositeDataType
         3 => "Alternate Identifier",
         4 => "Alternate Text",
         5 => "Name of Alternate Coding System",
+        _ => base.GetComponentName(index)
+    };
+}
+
+/// <summary>
+/// VFC - VFC Eligibility (specialized CE)
+/// </summary>
+public class VFC : CE
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="VFC"/> class
+    /// </summary>
+    public VFC() { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="VFC"/> class with a value
+    /// </summary>
+    public VFC(string value) : base(value) { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="VFC"/> class with a value and separators
+    /// </summary>
+    public VFC(string value, char componentSeparator, char subComponentSeparator) 
+        : base(value, componentSeparator, subComponentSeparator) { }
+
+    /// <summary>
+    /// Gets the descriptive name of a component at the specified index
+    /// </summary>
+    public override string GetComponentName(int index) => index switch
+    {
+        0 => "Identifier",
+        1 => "Text",
+        2 => "Name of Coding System",
         _ => base.GetComponentName(index)
     };
 }
@@ -144,6 +358,64 @@ public class CX : CompositeDataType
         5 => "Assigning Facility",
         6 => "Effective Date",
         7 => "Expiration Date",
+        8 => "Assigning Jurisdiction",
+        9 => "Assigning Organization",
+        _ => base.GetComponentName(index)
+    };
+}
+
+/// <summary>
+/// ERN - Error (CDC v1.5)
+/// </summary>
+public class ERN : CompositeDataType
+{
+    public string SegmentId => GetComponent(0);
+    public string Sequence => GetComponent(1);
+    public string FieldPosition => GetComponent(2);
+    public string FieldRepetition => GetComponent(3);
+    public string ComponentNumber => GetComponent(4);
+    public string SubComponentNumber => GetComponent(5);
+
+    public ERN() { }
+    public ERN(string value) : base(value) { }
+    public ERN(string value, char componentSeparator, char subComponentSeparator) 
+        : base(value, componentSeparator, subComponentSeparator) { }
+
+    public static implicit operator ERN(string value) => new ERN(value);
+
+    public override string GetComponentName(int index) => index switch
+    {
+        0 => "Segment ID",
+        1 => "Sequence",
+        2 => "Field Position",
+        3 => "Field Repetition",
+        4 => "Component Number",
+        5 => "Sub-Component Number",
+        _ => base.GetComponentName(index)
+    };
+}
+
+/// <summary>
+/// DLN - Driver's License Number
+/// </summary>
+public class DLN : CompositeDataType
+{
+    public string LicenseNumber => GetComponent(0);
+    public string IssuingState => GetComponent(1);
+    public string ExpirationDate => GetComponent(2);
+
+    public DLN() { }
+    public DLN(string value) : base(value) { }
+    public DLN(string value, char componentSeparator, char subComponentSeparator) 
+        : base(value, componentSeparator, subComponentSeparator) { }
+
+    public static implicit operator DLN(string value) => new DLN(value);
+
+    public override string GetComponentName(int index) => index switch
+    {
+        0 => "License Number",
+        1 => "Issuing State",
+        2 => "Expiration Date",
         _ => base.GetComponentName(index)
     };
 }
@@ -320,6 +592,11 @@ public class XAD : CompositeDataType
         11 => "Address Validity Range",
         _ => base.GetComponentName(index)
     };
+
+    /// <summary>
+    /// Gets the street address (specialized SAD)
+    /// </summary>
+    public SAD Street => new SAD(GetComponent(0));
 }
 
 /// <summary>
@@ -404,6 +681,9 @@ public class XTN : CompositeDataType
         6 => "Local Number",
         7 => "Extension",
         8 => "Any Text",
+        9 => "Extension Prefix",
+        10 => "Speed Dial Code",
+        11 => "Unformatted Telephone Number",
         _ => base.GetComponentName(index)
     };
 }

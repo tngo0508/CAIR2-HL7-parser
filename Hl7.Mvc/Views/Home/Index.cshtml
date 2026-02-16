@@ -7,6 +7,19 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/hl7-viewer.css" asp-append-version="true" />
+    <style>
+        .copy-button {
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .copy-button:hover {
+            opacity: 1;
+        }
+        .hl7-raw-container {
+            position: relative;
+        }
+    </style>
 }
 
 <div class="container-fluid py-3">
@@ -17,10 +30,18 @@
                 <!-- HL7 Input -->
                 <fluent-card class="@(Model.ParsedMessage != null ? "mb-3" : "h-100")">
                     <div class="p-3 d-flex flex-column h-100">
-                        <h2 class="section-title h5 mb-3">HL7 Input</h2>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2 class="section-title h5 mb-0">HL7 Input</h2>
+                            <fluent-button id="copy-input-btn" appearance="stealth" title="Copy to clipboard">
+                                <i class="ms-Icon ms-Icon--Copy"></i> Copy
+                            </fluent-button>
+                        </div>
                         <form asp-action="Index" method="post" class="d-flex flex-column flex-grow-1">
-                            <fluent-text-area name="Hl7Message" class="flex-grow-1 mb-3" style="font-family: 'Cascadia Code', monospace; width: 100%; min-height: 250px;" placeholder="Paste your HL7 message here...">@Model.Hl7Message</fluent-text-area>
-                            <fluent-button type="submit" appearance="accent">Parse Message</fluent-button>
+                            <fluent-text-area name="Hl7Message" id="hl7-message" class="flex-grow-1 mb-3" style="font-family: 'Cascadia Code', monospace; width: 100%; min-height: 250px;" placeholder="Paste your HL7 message here...">@Model.Hl7Message</fluent-text-area>
+                            <div class="d-flex gap-2">
+                                <fluent-button type="submit" appearance="accent">Parse Message</fluent-button>
+                                <fluent-button type="button" id="clear-btn" appearance="neutral">Clear</fluent-button>
+                            </div>
                         </form>
                     </div>
                 </fluent-card>
@@ -30,15 +51,20 @@
                     <!-- Raw Message -->
                     <fluent-card class="flex-grow-1">
                         <div class="p-3 d-flex flex-column h-100">
-                            <h2 class="section-title h5 mb-3">Raw Message</h2>
-                            <div class="hl7-raw border rounded p-2 flex-grow-1" id="raw-explorer" style="background-color: #faf9f8; overflow: auto; max-height: 400px; font-family: 'Cascadia Code', monospace; font-size: 13px;">
-                                @{
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h2 class="section-title h5 mb-0">Raw Message</h2>
+                                <fluent-button id="copy-raw-btn" appearance="stealth" title="Copy to clipboard">
+                                    <i class="ms-Icon ms-Icon--Copy"></i>
+                                </fluent-button>
+                            </div>
+                            <div class="hl7-raw-container border rounded flex-grow-1" style="background-color: #faf9f8; overflow: hidden;">
+                                <pre class="hl7-raw m-0 border-0 p-0" id="raw-explorer" style="overflow: auto; max-height: 400px;"><code id="raw-message-content" style="display: block; padding: 8px 0;">@{
                                     var rawLines = Model.Hl7Message.Split(new[] { "\r\n", "\r", "\n", "\v", "\f", "\x1C" }, StringSplitOptions.RemoveEmptyEntries);
                                     for (int i = 0; i < rawLines.Length; i++)
                                     {
-                                        <span class="hl7-line d-block" onclick="scrollToSegment(@i)" id="line-@i" style="cursor: pointer; white-space: pre;"><span class="hl7-line-num me-2 text-muted" style="width: 30px; display: inline-block; text-align: right;">@(i + 1)</span>@rawLines[i]</span>
+                                        <span class="hl7-line d-block" onclick="scrollToSegment(@i)" id="line-@i" style="cursor: pointer;"><span class="hl7-line-num me-2 text-muted" style="width: 32px; display: inline-block; text-align: right;">@(i + 1)</span>@rawLines[i]</span>
                                     }
-                                }
+                                }</code></pre>
                             </div>
                         </div>
                     </fluent-card>
@@ -97,6 +123,35 @@
 
 @section Scripts {
     <script>
+        document.getElementById('clear-btn').addEventListener('click', function () {
+            window.location.href = '@Url.Action("Index", "Home")';
+        });
+
+        document.getElementById('copy-input-btn')?.addEventListener('click', function() {
+            const text = document.getElementById('hl7-message').value;
+            copyToClipboard(text, 'copy-input-btn');
+        });
+
+        document.getElementById('copy-raw-btn')?.addEventListener('click', function() {
+            const text = document.getElementById('hl7-message').value;
+            copyToClipboard(text, 'copy-raw-btn');
+        });
+
+        function copyToClipboard(text, btnId) {
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById(btnId);
+                const icon = btn.querySelector('i');
+                const originalClass = icon.className;
+                icon.className = 'ms-Icon ms-Icon--CheckMark';
+                setTimeout(() => {
+                    icon.className = originalClass;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
         function scrollToSegment(index) {
             // Highlight the line
             document.querySelectorAll('.hl7-line').forEach(el => el.classList.remove('active'));

@@ -1,0 +1,96 @@
+@model (KeyValuePair<int, string> Field, Hl7.Core.Base.Segment Segment, Hl7.Core.Base.Hl7Message Message)
+@using Hl7.Core.Utils
+@using Hl7.Core.Types
+
+@{
+    var field = Model.Field;
+    var segment = Model.Segment;
+    var message = Model.Message;
+    var fieldType = segment.GetFieldType(field.Key);
+    var fieldName = segment.GetFieldName(field.Key);
+}
+
+@if (!string.IsNullOrEmpty(field.Value))
+{
+    <fluent-tree-item class="field-item">
+        <div slot="start" class="field-label">
+            <span class="field-id"><strong>@segment.SegmentId-@field.Key</strong></span>
+            <span class="field-name ms-2 text-muted">@fieldName</span>
+        </div>
+        
+        <div class="field-value-container">
+            <code class="field-value">@field.Value</code>
+        </div>
+        
+        @* Breakdown Repetitions *@
+        @{
+            var repetitions = Hl7FieldHelper.ParseRepeating(field.Value, message.Separators);
+            if (repetitions.Count > 1 || field.Value.Contains(message.Separators.ComponentSeparator))
+            {
+                foreach (var rep in repetitions)
+                {
+                    <fluent-tree-item>
+                        @if (repetitions.Count > 1)
+                        {
+                            <span>Repetition</span>
+                        }
+                        
+                        @{
+                            CompositeDataType composite;
+                            if (typeof(CompositeDataType).IsAssignableFrom(fieldType) && fieldType != typeof(CompositeDataType))
+                            {
+                                try {
+                                    composite = (CompositeDataType)Activator.CreateInstance(fieldType, rep, message.Separators.ComponentSeparator, message.Separators.SubComponentSeparator)!;
+                                } catch {
+                                    composite = Hl7FieldHelper.ParseComposite(rep, message.Separators);
+                                }
+                            }
+                            else
+                            {
+                                composite = Hl7FieldHelper.ParseComposite(rep, message.Separators);
+                            }
+
+                            if (composite.Components.Count > 1)
+                            {
+                                for (int c = 0; c < composite.Components.Count; c++)
+                                {
+                                    if (!string.IsNullOrEmpty(composite.Components[c]))
+                                    {
+                                        <fluent-tree-item>
+                                            <div slot="start" style="display: flex; align-items: center;">
+                                                <span class="component-badge" title="C@(c+1)">@composite.GetComponentName(c)</span>
+                                            </div>
+                                            <span style="font-size: 12px; color: #323130;">@composite.Components[c]</span>
+                                            
+                                            @if (composite.SubComponents.ContainsKey(c) && composite.SubComponents[c].Count > 1)
+                                            {
+                                                @foreach (var sub in composite.SubComponents[c])
+                                                {
+                                                    if (!string.IsNullOrEmpty(sub))
+                                                    {
+                                                        <fluent-tree-item>
+                                                            <div slot="start" style="display: flex; align-items: center;">
+                                                                <span class="subcomponent-badge">S</span>
+                                                            </div>
+                                                            <span style="font-size: 11px; color: #605e5c;">@sub</span>
+                                                        </fluent-tree-item>
+                                                    }
+                                                }
+                                            }
+                                        </fluent-tree-item>
+                                    }
+                                }
+                            }
+                            else if (repetitions.Count > 1)
+                            {
+                                <div style="display: flex; align-items: center;">
+                                    <code style="font-size: 11px;">@rep</code>
+                                </div>
+                            }
+                        }
+                    </fluent-tree-item>
+                }
+            }
+        }
+    </fluent-tree-item>
+}

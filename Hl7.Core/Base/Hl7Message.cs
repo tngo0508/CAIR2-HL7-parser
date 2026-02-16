@@ -16,6 +16,11 @@ public class Hl7Message
     public string MessageVersion { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the separators used in the message
+    /// </summary>
+    public Hl7.Core.Common.Hl7Separators Separators { get; set; } = new();
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="Hl7Message"/> class
     /// </summary>
     public Hl7Message() { }

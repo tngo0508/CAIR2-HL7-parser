@@ -35,18 +35,18 @@ public class Hl7Separators
     /// </summary>
     /// <param name="mshSegment">The MSH segment line</param>
     /// <returns>A new <see cref="Hl7Separators"/> instance</returns>
-    public static Hl7Separators ParseFromMSH(string mshSegment)
+    public static Hl7Separators ParseFromMSH(string headerSegment)
     {
-        if (mshSegment.Length < 4 || !mshSegment.StartsWith("MSH"))
-            throw new ArgumentException("Invalid MSH segment");
+        if (headerSegment.Length < 4 || (!headerSegment.StartsWith("MSH") && !headerSegment.StartsWith("FHS") && !headerSegment.StartsWith("BHS")))
+            throw new ArgumentException("Invalid header segment");
 
         return new Hl7Separators
         {
-            FieldSeparator = mshSegment[3],
-            ComponentSeparator = mshSegment.Length > 4 ? mshSegment[4] : '^',
-            RepetitionSeparator = mshSegment.Length > 5 ? mshSegment[5] : '~',
-            EscapeCharacter = mshSegment.Length > 6 ? mshSegment[6] : '\\',
-            SubComponentSeparator = mshSegment.Length > 7 ? mshSegment[7] : '&'
+            FieldSeparator = headerSegment[3],
+            ComponentSeparator = headerSegment.Length > 4 ? headerSegment[4] : '^',
+            RepetitionSeparator = headerSegment.Length > 5 ? headerSegment[5] : '~',
+            EscapeCharacter = headerSegment.Length > 6 ? headerSegment[6] : '\\',
+            SubComponentSeparator = headerSegment.Length > 7 ? headerSegment[7] : '&'
         };
     }
 }

@@ -80,7 +80,7 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
         Assert.Equal("GEORGE", pid.PatientName.GivenName);
         Assert.Equal("M", pid.PatientName.SecondAndFurtherGivenNamesOrInitials);
         Assert.Equal("JR", pid.PatientName.Suffix);
-        Assert.Equal("20140227", pid.DateOfBirth);
+        Assert.Equal("20140227", pid.DateOfBirth.Time);
         Assert.Equal("2106-3^WHITE^HL70005", (string)pid.Race);
         Assert.Equal("2106-3", pid.Race.Identifier);
         Assert.Equal("WHITE", pid.Race.Text);
@@ -112,6 +112,34 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
     }
 
     [Fact]
+    public void Parse_VXU_With_New_Fields_Test()
+    {
+        // Arrange
+        // Use exactly 21 fields for PID (PID-21 is index 21)
+        const string msh = "MSH|^~\\&|MyEMR|DE000001||CAIR2|20200225123030||VXU^V04^VXU_V04|CA0001|P|2.5.1";
+        const string pid = "PID|1||PA123456^^^XYZCLINIC^MR||JONES^GEORGE^M^JR||||||||||||||||MATERNAL123^^^MATERNAL_FACILITY^MR";
+        const string pd1 = "PD1||||DOE^JANE^A^DR|||||||02^REMINDER/RECALL – ANY METHOD^HL70215|N";
+        
+        string vxu = $"{msh}\r{pid}\r{pd1}";
+
+        // Act
+        var message = _parser.ParseMessage(vxu);
+
+        // Assert
+        var pidSegment = message.GetSegment<PIDSegment>("PID");
+        Assert.NotNull(pidSegment);
+        
+        Assert.Equal("MATERNAL123^^^MATERNAL_FACILITY^MR", pidSegment.GetField(21));
+        Assert.Equal("MATERNAL123", pidSegment.MaternalPatientId.IDNumber);
+        Assert.Equal("MATERNAL_FACILITY", pidSegment.MaternalPatientId.AssigningAuthority);
+
+        var pd1Segment = message.GetSegment<PD1Segment>("PD1");
+        Assert.NotNull(pd1Segment);
+        Assert.Equal("DOE", pd1Segment.PrimaryCareProvider.FamilyName);
+        Assert.Equal("JANE", pd1Segment.PrimaryCareProvider.GivenName);
+    }
+
+    [Fact]
     public void Parse_VXU_Specification_Sample_Test()
     {
         // Act
@@ -126,7 +154,7 @@ OBX|1|CE|64994-7^Vaccine funding program eligibility category^LN|1|V03^VFC eligi
         var pid = message.GetSegment<PIDSegment>("PID");
         Assert.NotNull(pid);
         Assert.Equal("DOE^JOHN^J^JR", (string)pid.PatientName);
-        Assert.Equal("19800101", pid.DateOfBirth);
+        Assert.Equal("19800101", pid.DateOfBirth.Time);
 
         var rxa = message.GetSegment<RXASegment>("RXA");
         Assert.NotNull(rxa);

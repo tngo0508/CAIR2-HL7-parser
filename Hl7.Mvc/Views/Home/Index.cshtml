@@ -1,0 +1,109 @@
+﻿@model Hl7ParseViewModel
+@using Hl7.Core.Utils
+@using Hl7.Core.Types
+@{
+    ViewData["Title"] = "HL7 Viewer";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hl7-viewer.css" asp-append-version="true" />
+}
+
+<div class="main-layout">
+    <!-- Sidebar: Input & Raw Explorer -->
+    <div class="sidebar">
+        <fluent-card class="input-card">
+            <div class="input-section">
+                <h2 class="section-title">HL7 Input</h2>
+                <form asp-action="Index" method="post" style="display: flex; flex-direction: column; flex-grow: 1;">
+                    <fluent-text-area name="Hl7Message" style="flex-grow: 1; width: 100%; font-family: 'Cascadia Code', monospace; margin-bottom: 12px;" placeholder="Paste your HL7 message here...">@Model.Hl7Message</fluent-text-area>
+                    <fluent-button type="submit" appearance="accent">Parse Message</fluent-button>
+                </form>
+            </div>
+        </fluent-card>
+
+        @if (Model.ParsedMessage != null)
+        {
+            <fluent-card class="raw-card">
+                <div class="raw-section">
+                    <h2 class="section-title">Raw Message</h2>
+                    <div class="hl7-raw" id="raw-explorer">
+                        @{
+                            var rawLines = Model.Hl7Message.Split(new[] { "\r\n", "\r", "\n", "\v", "\f", "\x1C" }, StringSplitOptions.RemoveEmptyEntries);
+                            for (int i = 0; i < rawLines.Length; i++)
+                            {
+                                <span class="hl7-line" onclick="scrollToSegment(@i)" id="line-@i"><span class="hl7-line-num">@(i + 1)</span>@rawLines[i]</span>
+                            }
+                        }
+                    </div>
+                </div>
+            </fluent-card>
+        }
+    </div>
+
+    <!-- Main Content: Parsed Viewer -->
+    <div class="content-area">
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert" style="margin-bottom: 20px;">
+                <i class="ms-Icon ms-Icon--ErrorBadge me-2"></i> @Model.ErrorMessage
+            </div>
+        }
+
+        @if (Model.ParsedMessage != null)
+        {
+            <fluent-card class="viewer-card">
+                <div class="viewer-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="ms-fontSize-20 ms-fontWeight-semibold mb-0">Parsed Segments</h3>
+                        <span class="text-muted ms-fontSize-12">Found @Model.ParsedMessage.Segments.Count segments</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.ParsedMessage.MessageVersion))
+                    {
+                        <fluent-badge appearance="accent">HL7 v@(Model.ParsedMessage.MessageVersion)</fluent-badge>
+                    }
+                </div>
+
+                <div class="segments-list" id="segments-container">
+                    <fluent-tree-view>
+                        @for (int i = 0; i < Model.ParsedMessage.Segments.Count; i++)
+                        {
+                            <partial name="_SegmentDetail" model="(Model.ParsedMessage.Segments[i], i, Model.ParsedMessage)" />
+                        }
+                    </fluent-tree-view>
+                </div>
+            </fluent-card>
+        }
+        else if (string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div style="display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; color: #605e5c;">
+                <i class="ms-Icon ms-Icon--DocumentSearch" style="font-size: 64px; margin-bottom: 16px;"></i>
+                <p class="ms-fontSize-18">Ready to parse your HL7 message.</p>
+                <p class="ms-fontSize-14">Paste the message in the left panel and click "Parse Message".</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function scrollToSegment(index) {
+            // Highlight the line
+            document.querySelectorAll('.hl7-line').forEach(el => el.classList.remove('active'));
+            const lineEl = document.getElementById('line-' + index);
+            if (lineEl) lineEl.classList.add('active');
+
+            // Find the segment tree item
+            const segmentEl = document.getElementById('segment-' + index);
+            if (segmentEl) {
+                segmentEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                // Visual feedback
+                segmentEl.setAttribute('selected', '');
+                setTimeout(() => {
+                    segmentEl.removeAttribute('selected');
+                }, 2000);
+            }
+        }
+    </script>
+}

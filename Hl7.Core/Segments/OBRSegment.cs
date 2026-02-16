@@ -33,32 +33,32 @@ public class OBRSegment : Segment
     /// <summary>
     /// Gets or sets the Universal Service ID (OBR-4)
     /// </summary>
-    [DataElement(4, "Universal Service ID", ElementUsage.Optional)]
+    [DataElement(4, "Universal Service ID", ElementUsage.Required)]
     public CE UniversalServiceId { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Priority (OBR-5)
     /// </summary>
     [DataElement(5, "Priority", ElementUsage.Optional)]
-    public int Priority { get; set; }
+    public string Priority { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the Requested Date/Time (OBR-6)
     /// </summary>
     [DataElement(6, "Requested Date/Time", ElementUsage.Optional)]
-    public string RequestedDateTime { get; set; } = string.Empty;
+    public TSU RequestedDateTime { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Observation Date/Time (OBR-7)
     /// </summary>
     [DataElement(7, "Observation Date/Time", ElementUsage.Optional)]
-    public string ObservationDateTime { get; set; } = string.Empty;
+    public TSU ObservationDateTime { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Observation End Date/Time (OBR-8)
     /// </summary>
     [DataElement(8, "Observation End Date/Time", ElementUsage.Optional)]
-    public string ObservationEndDateTime { get; set; } = string.Empty;
+    public TSU ObservationEndDateTime { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the Collector's Comment (OBR-9)

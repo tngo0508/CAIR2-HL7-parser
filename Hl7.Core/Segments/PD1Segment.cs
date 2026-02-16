@@ -1,6 +1,7 @@
 using Hl7.Core.Base;
 using Hl7.Core.Common;
 using Hl7.Core.Utils;
+using Hl7.Core.Types;
 
 namespace Hl7.Core.Segments;
 
@@ -10,6 +11,12 @@ namespace Hl7.Core.Segments;
 [Segment("PD1")]
 public class PD1Segment : Segment
 {
+    /// <summary>
+    /// Gets or sets the Patient Primary Care Provider Name & ID No. (PD1-4)
+    /// </summary>
+    [DataElement(4, "Patient Primary Care Provider Name & ID No.", ElementUsage.Optional)]
+    public XPN PrimaryCareProvider { get; set; } = new();
+
     /// <summary>
     /// Gets or sets the publicity code (PD1-11)
     /// </summary>
@@ -26,7 +33,7 @@ public class PD1Segment : Segment
     /// Gets or sets the protection indicator effective date (PD1-13)
     /// </summary>
     [DataElement(13, "Protection Indicator Effective Date", ElementUsage.Optional)]
-    public string ProtectionIndicatorEffectiveDate { get; set; } = string.Empty;
+    public TSU ProtectionIndicatorEffectiveDate { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the immunization registry status (PD1-16)
@@ -38,7 +45,7 @@ public class PD1Segment : Segment
     /// Gets or sets the immunization registry status effective date (PD1-17)
     /// </summary>
     [DataElement(17, "Immunization Registry Status Effective Date", ElementUsage.Optional)]
-    public string ImmunizationRegistryStatusEffectiveDate { get; set; } = string.Empty;
+    public TSU ImmunizationRegistryStatusEffectiveDate { get; set; } = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PD1Segment"/> class

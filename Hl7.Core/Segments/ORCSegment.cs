@@ -30,6 +30,42 @@ public class ORCSegment : Segment
     public string FillerOrderNumber { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the placer group number (ORC-4)
+    /// </summary>
+    [DataElement(4, "Placer Group Number", ElementUsage.Optional)]
+    public string PlacerGroupNumber { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the order status (ORC-5)
+    /// </summary>
+    [DataElement(5, "Order Status", ElementUsage.Optional)]
+    public string OrderStatus { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the response flag (ORC-6)
+    /// </summary>
+    [DataElement(6, "Response Flag", ElementUsage.Optional)]
+    public string ResponseFlag { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the quantity/timing (ORC-7)
+    /// </summary>
+    [DataElement(7, "Quantity/Timing", ElementUsage.Optional)]
+    public string QuantityTiming { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the parent order (ORC-8)
+    /// </summary>
+    [DataElement(8, "Parent Order", ElementUsage.Optional)]
+    public string ParentOrder { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the date/time of transaction (ORC-9)
+    /// </summary>
+    [DataElement(9, "Date/Time of Transaction", ElementUsage.Optional)]
+    public TSU DateTimeOfTransaction { get; set; } = new();
+
+    /// <summary>
     /// Gets or sets the person who entered the order (ORC-10)
     /// </summary>
     [DataElement(10, "Entered By", ElementUsage.RequiredButMayBeEmpty)]
@@ -40,6 +76,12 @@ public class ORCSegment : Segment
     /// </summary>
     [DataElement(12, "Ordering Provider", ElementUsage.RequiredButMayBeEmpty)]
     public XPN OrderingProvider { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the Enterer's Location (ORC-13)
+    /// </summary>
+    [DataElement(13, "Enterer's Location", ElementUsage.Optional)]
+    public string EnterersLocation { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the entering organization (ORC-17)

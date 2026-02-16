@@ -33,7 +33,7 @@ public class Hl7Parser
             return new Hl7Message();
 
         var message = new Hl7Message();
-        var lines = hl7Message.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+        var lines = hl7Message.Split(new[] { "\r\n", "\r", "\n", "\v", "\f", "\x1C" }, StringSplitOptions.RemoveEmptyEntries);
 
         foreach (var line in lines)
         {
@@ -42,12 +42,21 @@ public class Hl7Parser
 
             var trimmedLine = line.Trim();
 
-            // MSH segment must be parsed first to extract separators
-            if (trimmedLine.StartsWith("MSH"))
+            // MSH, FHS or BHS segment must be parsed first to extract separators
+            if (trimmedLine.StartsWith("MSH") || trimmedLine.StartsWith("FHS") || trimmedLine.StartsWith("BHS"))
             {
-                var mshSegment = ParseMSHSegment(trimmedLine);
-                message.AddSegment(mshSegment);
-                message.MessageVersion = mshSegment.VersionId;
+                var headerSegment = ParseHeaderSegment(trimmedLine);
+                message.AddSegment(headerSegment);
+                if (headerSegment is MSHSegment msh)
+                {
+                    var version = msh.VersionId;
+                    if (version.Contains(_separators.ComponentSeparator))
+                    {
+                        version = version.Split(_separators.ComponentSeparator)[0];
+                    }
+                    message.MessageVersion = version;
+                }
+                message.Separators = _separators;
             }
             else
             {
@@ -60,6 +69,48 @@ public class Hl7Parser
         }
 
         return message;
+    }
+
+    /// <summary>
+    /// Parses a header segment (MSH, FHS, or BHS) and extracts separators
+    /// </summary>
+    public Segment ParseHeaderSegment(string segmentLine)
+    {
+        if (string.IsNullOrWhiteSpace(segmentLine))
+            throw new ArgumentException("Segment line cannot be empty");
+
+        // Extract separators
+        _separators = Hl7Separators.ParseFromMSH(segmentLine);
+        
+        var fieldSeparator = segmentLine[3];
+        var segmentId = segmentLine[..3];
+
+        if (segmentId == "MSH")
+        {
+            return ParseMSHSegment(segmentLine);
+        }
+
+        // For FHS/BHS, field 1 is the separator itself.
+        // segmentLine: "FHS|^~\\&|..."
+        // Split returns: ["FHS", "^~\\&", "..."]
+        // HL7 expects: FHS-1="|", FHS-2="^~\\&", FHS-3="..."
+        var rawFields = segmentLine.Split(fieldSeparator);
+        var fields = new string[rawFields.Length + 1];
+        fields[0] = rawFields[0]; // "FHS"
+        fields[1] = fieldSeparator.ToString(); // FHS-1
+        for (int i = 1; i < rawFields.Length; i++)
+        {
+            fields[i + 1] = rawFields[i];
+        }
+
+        Segment segment = segmentId switch
+        {
+            "FHS" => ParseSegmentByAttributes<FHSSegment>(segmentId, fields),
+            "BHS" => ParseSegmentByAttributes<BHSSegment>(segmentId, fields),
+            _ => ParseGenericSegment(segmentId, fields)
+        };
+
+        return segment;
     }
 
     /// <summary>
@@ -111,7 +162,7 @@ public class Hl7Parser
         mshSegment.Fields[1] = fieldSeparator.ToString(); // MSH-1 is the separator
         for (int i = 1; i < fields.Length; i++)
         {
-            mshSegment.Fields[i + 1] = UnescapeField(fields[i]);
+            mshSegment.Fields[i + 1] = fields[i];
         }
 
         return mshSegment;
@@ -125,12 +176,15 @@ public class Hl7Parser
         if (string.IsNullOrWhiteSpace(segmentLine))
             return null;
 
+        if (segmentLine.Length < 3)
+            return ParseGenericSegment(segmentLine, Array.Empty<string>());
+
         var segmentId = segmentLine[..3];
         
-        // Handle MSH separately (should be parsed first)
-        if (segmentId == "MSH")
+        // Handle MSH, FHS, BHS separately (should be parsed first)
+        if (segmentId == "MSH" || segmentId == "FHS" || segmentId == "BHS")
         {
-            return ParseMSHSegment(segmentLine);
+            return ParseHeaderSegment(segmentLine);
         }
 
         var fields = SplitFields(segmentLine, _separators.FieldSeparator);
@@ -140,16 +194,21 @@ public class Hl7Parser
             "PID" => ParseSegmentByAttributes<PIDSegment>(segmentId, fields),
             "OBR" => ParseSegmentByAttributes<OBRSegment>(segmentId, fields),
             "OBX" => ParseSegmentByAttributes<OBXSegment>(segmentId, fields),
-            "RXA" => ParseRXASegment(fields),
+            "RXA" => ParseSegmentByAttributes<RXASegment>(segmentId, fields),
             "RXR" => ParseSegmentByAttributes<RXRSegment>(segmentId, fields),
             "ORC" => ParseSegmentByAttributes<ORCSegment>(segmentId, fields),
             "PD1" => ParseSegmentByAttributes<PD1Segment>(segmentId, fields),
+            "PV1" => ParseSegmentByAttributes<PV1Segment>(segmentId, fields),
             "NK1" => ParseSegmentByAttributes<NK1Segment>(segmentId, fields),
             "QPD" => ParseSegmentByAttributes<QPDSegment>(segmentId, fields),
             "RCP" => ParseSegmentByAttributes<RCPSegment>(segmentId, fields),
             "QAK" => ParseSegmentByAttributes<QAKSegment>(segmentId, fields),
             "MSA" => ParseSegmentByAttributes<MSASegment>(segmentId, fields),
             "ERR" => ParseSegmentByAttributes<ERRSegment>(segmentId, fields),
+            "FHS" => ParseSegmentByAttributes<FHSSegment>(segmentId, fields),
+            "FTS" => ParseSegmentByAttributes<FTSSegment>(segmentId, fields),
+            "BHS" => ParseSegmentByAttributes<BHSSegment>(segmentId, fields),
+            "BTS" => ParseSegmentByAttributes<BTSSegment>(segmentId, fields),
             _ => ParseGenericSegment(segmentId, fields)
         };
     }
@@ -170,21 +229,75 @@ public class Hl7Parser
         foreach (var entry in properties)
         {
             var position = entry.Attribute!.Position;
-            var rawValue = UnescapeField(GetField(fields, position));
+            var rawValue = GetField(fields, position);
 
             if (entry.Property.PropertyType == typeof(int))
             {
-                entry.Property.SetValue(segment, ParseInt(rawValue));
+                entry.Property.SetValue(segment, ParseInt(UnescapeField(rawValue)));
             }
             else if (entry.Property.PropertyType == typeof(string))
             {
-                entry.Property.SetValue(segment, rawValue);
+                entry.Property.SetValue(segment, UnescapeField(rawValue));
             }
             else if (typeof(CompositeDataType).IsAssignableFrom(entry.Property.PropertyType))
             {
                 var composite = (CompositeDataType)Activator.CreateInstance(entry.Property.PropertyType)!;
                 composite.Parse(rawValue, _separators.ComponentSeparator, _separators.SubComponentSeparator);
+                
+                // Unescape components and subcomponents
+                UnescapeComposite(composite);
+                
                 entry.Property.SetValue(segment, composite);
+            }
+        }
+
+        if (segment is RXASegment rxa)
+        {
+            // Fallback logic for non-standard RXA segments (common in some CAIR2 implementations)
+            // where fields 12-15 might be shifted.
+            var field12 = GetField(fields, 12);
+            var field13 = GetField(fields, 13);
+            var field14 = GetField(fields, 14);
+            var field15 = GetField(fields, 15);
+
+            // Check if the current lot number is empty but field 12 looks like a lot number and 13 like a date
+            if (string.IsNullOrWhiteSpace(rxa.SubstanceLotNumber) || rxa.SubstanceLotNumber == field15)
+            {
+                if (!string.IsNullOrWhiteSpace(field12) && LooksLikeDate(field13))
+                {
+                    // Case 1: Lot@12, Exp@13, Manufacturer@14 (Very common in CAIR2)
+                    rxa.SubstanceLotNumber = UnescapeField(field12);
+                    rxa.SubstanceExpirationDate = ParseComposite<TSU>(field13);
+                    
+                    if (!string.IsNullOrWhiteSpace(field14) && string.IsNullOrWhiteSpace(rxa.SubstanceManufacturerName.Identifier))
+                    {
+                        rxa.SubstanceManufacturerName = ParseComposite<CE>(field14);
+                    }
+                }
+            }
+        }
+
+        if (segment is OBXSegment obx)
+        {
+            // After regular properties are set, re-parse OBX-5 if it should be a complex type
+            var valueType = obx.ValueType;
+            var rawObservationValue = GetField(fields, 5);
+            
+            Type complexType = valueType switch
+            {
+                "CE" => typeof(CE),
+                "XPN" => typeof(XPN),
+                "XAD" => typeof(XAD),
+                "XTN" => typeof(XTN),
+                "TS" => typeof(TSU),
+                "EI" => typeof(EI),
+                _ => null
+            };
+
+            if (complexType != null)
+            {
+                // We don't store the complex object in OBXSegment property because it's a string property,
+                // but the UI calls GetFieldType(5) which now returns the complex type.
             }
         }
 
@@ -192,64 +305,29 @@ public class Hl7Parser
         return segment;
     }
 
-    private RXASegment ParseRXASegment(string[] fields)
+    private void UnescapeComposite(CompositeDataType composite)
     {
-        var segment = new RXASegment
+        for (int i = 0; i < composite.Components.Count; i++)
         {
-            SegmentId = "RXA",
-            GiveSubIdCounter = ParseInt(UnescapeField(GetField(fields, 1))),
-            AdministrationSubIdCounter = UnescapeField(GetField(fields, 2)),
-            DateTimeOfAdministration = UnescapeField(GetField(fields, 3)),
-            DateTimeOfAdministrationEnd = UnescapeField(GetField(fields, 4)),
-            AdministeredCode = new CE(UnescapeField(GetField(fields, 5))),
-            AdministeredAmount = UnescapeField(GetField(fields, 6)),
-            AdministeredUnits = new CE(UnescapeField(GetField(fields, 7))),
-            AdministrationNotes = UnescapeField(GetField(fields, 9)),
-            AdministeringProvider = new XPN(UnescapeField(GetField(fields, 10))),
-            AdministeredAtLocation = UnescapeField(GetField(fields, 11)),
-            AdministeredPer = UnescapeField(GetField(fields, 12)),
-            AdministeredStrength = UnescapeField(GetField(fields, 13)),
-            AdministeredStrengthUnits = UnescapeField(GetField(fields, 14)),
-            SubstanceLotNumber = UnescapeField(GetField(fields, 15)),
-            SubstanceExpirationDate = UnescapeField(GetField(fields, 16)),
-            SubstanceManufacturerName = new CE(UnescapeField(GetField(fields, 17)))
-        };
-
-        if (fields.Length > 17)
-            segment.SubstanceRefusalReason = new CE(UnescapeField(GetField(fields, 18)));
-        if (fields.Length > 18)
-            segment.Indication = UnescapeField(GetField(fields, 19));
-        if (fields.Length > 19)
-            segment.CompletionStatus = UnescapeField(GetField(fields, 20));
-        if (fields.Length > 20)
-            segment.ActionCode = UnescapeField(GetField(fields, 21));
-
-        var field12 = UnescapeField(GetField(fields, 12));
-        var field13 = UnescapeField(GetField(fields, 13));
-        var field14 = UnescapeField(GetField(fields, 14));
-        var field15 = UnescapeField(GetField(fields, 15));
-
-        if (!string.IsNullOrWhiteSpace(field12) && LooksLikeDate(field13) && string.IsNullOrWhiteSpace(field14))
-        {
-            segment.SubstanceLotNumber = field12;
-            segment.SubstanceExpirationDate = field13;
-            if (!string.IsNullOrWhiteSpace(field15))
-                segment.SubstanceManufacturerName = new CE(field15);
-        }
-        else if (string.IsNullOrWhiteSpace(segment.SubstanceLotNumber))
-        {
-            if (!string.IsNullOrWhiteSpace(field12))
+            composite.Components[i] = UnescapeField(composite.Components[i]);
+            if (composite.SubComponents.ContainsKey(i))
             {
-                segment.SubstanceLotNumber = field12;
-                if (string.IsNullOrWhiteSpace(segment.SubstanceExpirationDate))
-                    segment.SubstanceExpirationDate = field13;
-                if (string.IsNullOrWhiteSpace(segment.SubstanceManufacturerName))
-                    segment.SubstanceManufacturerName = new CE(field15);
+                for (int j = 0; j < composite.SubComponents[i].Count; j++)
+                {
+                    composite.SubComponents[i][j] = UnescapeField(composite.SubComponents[i][j]);
+                }
             }
         }
+    }
 
-        PopulateSegmentFields(segment, fields);
-        return segment;
+    private TComposite ParseComposite<TComposite>(string value) where TComposite : CompositeDataType, new()
+    {
+        var composite = new TComposite();
+        composite.Parse(value, _separators.ComponentSeparator, _separators.SubComponentSeparator);
+        
+        UnescapeComposite(composite);
+        
+        return composite;
     }
 
     private static bool LooksLikeDate(string value)
@@ -271,7 +349,7 @@ public class Hl7Parser
 
     private Segment ParseGenericSegment(string segmentId, string[] fields)
     {
-        var segment = new Segment(segmentId);
+        var segment = new Segment(string.IsNullOrWhiteSpace(segmentId) ? "???" : segmentId);
         PopulateSegmentFields(segment, fields);
         return segment;
     }
@@ -282,20 +360,26 @@ public class Hl7Parser
     private void PopulateSegmentFields(Segment segment, string[] fields)
     {
         segment.Fields = new Dictionary<int, string>();
+        if (fields == null) return;
+        
         for (int i = 1; i < fields.Length; i++)
         {
-            segment.Fields[i] = UnescapeField(fields[i]);
+            segment.Fields[i] = fields[i];
         }
     }
 
     private string[] SplitFields(string line, char fieldSeparator)
     {
+        if (string.IsNullOrEmpty(line))
+            return Array.Empty<string>();
         return line.Split(fieldSeparator);
     }
 
     private string GetField(string[] fields, int index)
     {
-        return index >= 0 && index < fields.Length ? fields[index] : string.Empty;
+        if (fields == null || index < 0 || index >= fields.Length)
+            return string.Empty;
+        return fields[index];
     }
 
     private int ParseInt(string value)

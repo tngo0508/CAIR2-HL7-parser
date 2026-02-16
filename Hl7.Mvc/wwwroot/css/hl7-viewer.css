@@ -165,3 +165,8 @@ code {
     font-weight: 600;
     color: #323130;
 }
+
+fluent-text-area::part(control) {
+    resize: vertical;
+    height: 100%;
+}

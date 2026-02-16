@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy ASP.Net Core app to Azure Web App - cair2-hl7
+name: Build and deploy ASP.Net Core app to Azure Web App - cair2-hl7-app
 
 on:
   push:
@@ -33,7 +33,7 @@ jobs:
         run: dotnet test --configuration Release --no-build --verbosity normal
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o ${{ github.workspace }}/publish
+        run: dotnet publish Hl7.Mvc/Hl7.Mvc.csproj -c Release -o ${{ github.workspace }}/publish
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -66,7 +66,7 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'cair2-hl7'
+          app-name: 'cair2-hl7-app'
           slot-name: 'Production'
           package: ./publish
           

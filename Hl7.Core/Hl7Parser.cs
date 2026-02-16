@@ -33,7 +33,7 @@ public class Hl7Parser
             return new Hl7Message();
 
         var message = new Hl7Message();
-        var lines = hl7Message.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+        var lines = hl7Message.Split(new[] { "\r\n", "\r", "\n", "\v", "\f", "\x1C" }, StringSplitOptions.RemoveEmptyEntries);
 
         foreach (var line in lines)
         {
@@ -48,6 +48,7 @@ public class Hl7Parser
                 var mshSegment = ParseMSHSegment(trimmedLine);
                 message.AddSegment(mshSegment);
                 message.MessageVersion = mshSegment.VersionId;
+                message.Separators = _separators;
             }
             else
             {

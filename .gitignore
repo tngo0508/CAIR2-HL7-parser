@@ -18,6 +18,8 @@ x64/
 x86/
 [Bb]in/
 [Oo]bj/
+local-publish/
+local-publish-mvc/
 
 # JetBrains Rider
 .idea/
@@ -36,3 +38,6 @@ x86/
 
 # macOS
 .DS_Store
+
+# Miscellaneous
+.output.txt

@@ -13,6 +13,12 @@
         <span class="ms-2 badge bg-light text-dark" style="font-weight: 400; font-size: 11px;">#@(i + 1)</span>
     </div>
     
+    <div slot="actions">
+        <fluent-button appearance="stealth" size="x-small" onclick="scrollToAnalysis(@i)" title="View detailed analysis">
+            <i class="ms-Icon ms-Icon--EntryView"></i>
+        </fluent-button>
+    </div>
+    
     @foreach (var field in segment.Fields.OrderBy(f => f.Key))
     {
         <partial name="_FieldBreakdown" model="(field, segment, message)" />

@@ -6,16 +6,18 @@
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/hl7-viewer.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hl7-viewer.css" asp-append-version="true"/>
     <style>
         .copy-button {
             cursor: pointer;
             opacity: 0.7;
             transition: opacity 0.2s;
         }
+
         .copy-button:hover {
             opacity: 1;
         }
+
         .hl7-raw-container {
             position: relative;
         }
@@ -31,16 +33,28 @@
                 <fluent-card class="@(Model.ParsedMessage != null ? "mb-3" : "h-100")">
                     <div class="p-3 d-flex flex-column h-100">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h2 class="section-title h5 mb-0">HL7 Input</h2>
+                            <h2 class="section-title h5 mb-0">
+                                <i class="ms-Icon ms-Icon--Edit me-2"></i>HL7 Input
+                            </h2>
                             <fluent-button id="copy-input-btn" appearance="stealth" title="Copy to clipboard">
-                                <i class="ms-Icon ms-Icon--Copy"></i> Copy
+                                <i class="ms-Icon ms-Icon--Copy me-2"></i>Copy
                             </fluent-button>
                         </div>
                         <form asp-action="Index" method="post" class="d-flex flex-column flex-grow-1">
-                            <fluent-text-area name="Hl7Message" id="hl7-message" class="flex-grow-1 mb-3" style="font-family: 'Cascadia Code', monospace; width: 100%; min-height: 250px;" placeholder="Paste your HL7 message here...">@Model.Hl7Message</fluent-text-area>
+                            <fluent-text-area name="Hl7Message" id="hl7-message" class="flex-grow-1 mb-3"
+                                              resize="vertical"
+                                              style="font-family: 'Cascadia Code', monospace; width: 100%; min-height: 400px; height: 100%;"
+                                              placeholder="Paste your HL7 message here...">@Model.Hl7Message</fluent-text-area>
                             <div class="d-flex gap-2">
-                                <fluent-button type="submit" appearance="accent">Parse Message</fluent-button>
-                                <fluent-button type="button" id="clear-btn" appearance="neutral">Clear</fluent-button>
+                                <fluent-button type="submit" appearance="accent">
+                                    <i class="ms-Icon ms-Icon--Play me-2"></i>Parse Message
+                                </fluent-button>
+                                <fluent-button type="button" id="load-sample-btn" appearance="neutral">
+                                    <i class="ms-Icon ms-Icon--DocumentSearch me-2"></i>Load Sample
+                                </fluent-button>
+                                <fluent-button type="button" id="clear-btn" appearance="neutral">
+                                    <i class="ms-Icon ms-Icon--Delete me-2"></i>Clear
+                                </fluent-button>
                             </div>
                         </form>
                     </div>
@@ -52,19 +66,27 @@
                     <fluent-card class="flex-grow-1">
                         <div class="p-3 d-flex flex-column h-100">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h2 class="section-title h5 mb-0">Raw Message</h2>
+                                <h2 class="section-title h5 mb-0">
+                                    <i class="ms-Icon ms-Icon--Code me-2"></i>Raw Message
+                                </h2>
                                 <fluent-button id="copy-raw-btn" appearance="stealth" title="Copy to clipboard">
-                                    <i class="ms-Icon ms-Icon--Copy"></i>
+                                    <i class="ms-Icon ms-Icon--Copy me-2"></i>Copy
                                 </fluent-button>
                             </div>
-                            <div class="hl7-raw-container border rounded flex-grow-1" style="background-color: #faf9f8; overflow: hidden;">
-                                <pre class="hl7-raw m-0 border-0 p-0" id="raw-explorer" style="overflow: auto; max-height: 400px;"><code id="raw-message-content" style="display: block; padding: 8px 0;">@{
-                                    var rawLines = Model.Hl7Message.Split(new[] { "\r\n", "\r", "\n", "\v", "\f", "\x1C" }, StringSplitOptions.RemoveEmptyEntries);
-                                    for (int i = 0; i < rawLines.Length; i++)
-                                    {
-                                        <span class="hl7-line d-block" onclick="scrollToSegment(@i)" id="line-@i" style="cursor: pointer;"><span class="hl7-line-num me-2 text-muted" style="width: 32px; display: inline-block; text-align: right;">@(i + 1)</span>@rawLines[i]</span>
-                                    }
-                                }</code></pre>
+                            <div class="hl7-raw-container border rounded flex-grow-1"
+                                 style="background-color: #faf9f8; overflow: hidden;">
+                                <pre class="hl7-raw m-0 border-0 p-0" id="raw-explorer"
+                                     style="overflow: auto; max-height: 400px;"><code id="raw-message-content"
+                                                                                      style="display: block; padding: 8px 0;">@{
+                                            var rawLines = Model.Hl7Message.Split(new[] { "\r\n", "\r", "\n", "\v", "\f", "\x1C" }, StringSplitOptions.RemoveEmptyEntries);
+                                            for (int i = 0; i < rawLines.Length; i++)
+                                            {
+                                                <span class="hl7-line d-block" onclick="scrollToSegment(@i)"
+                                                      id="line-@i" style="cursor: pointer;"><span
+                                                        class="hl7-line-num me-2 text-muted"
+                                                        style="width: 32px; display: inline-block; text-align: right;">@(i + 1)</span>@rawLines[i]</span>
+                                            }
+                                        }</code></pre>
                             </div>
                         </div>
                     </fluent-card>
@@ -87,20 +109,25 @@
                     <div class="p-3 d-flex flex-column h-100">
                         <div class="viewer-header d-flex justify-content-between align-items-center mb-3">
                             <div>
-                                <h3 class="h5 mb-0">Parsed Segments</h3>
+                                <h3 class="h5 mb-0">
+                                    <i class="ms-Icon ms-Icon--BulletedList me-2"></i>Parsed Segments
+                                </h3>
                                 <small class="text-muted">Found @Model.ParsedMessage.Segments.Count segments</small>
                             </div>
                             @if (!string.IsNullOrEmpty(Model.ParsedMessage.MessageVersion))
                             {
-                                <fluent-badge appearance="accent">HL7 v@(Model.ParsedMessage.MessageVersion)</fluent-badge>
+                                <fluent-badge appearance="accent">HL7
+                                    v@(Model.ParsedMessage.MessageVersion)</fluent-badge>
                             }
                         </div>
 
-                        <div class="segments-list border rounded flex-grow-1" id="segments-container" style="max-height: 800px; overflow-y: auto;">
+                        <div class="segments-list border rounded flex-grow-1" id="segments-container"
+                             style="max-height: 800px; overflow-y: auto;">
                             <fluent-tree-view>
                                 @for (int i = 0; i < Model.ParsedMessage.Segments.Count; i++)
                                 {
-                                    <partial name="_SegmentDetail" model="(Model.ParsedMessage.Segments[i], i, Model.ParsedMessage)" />
+                                    <partial name="_SegmentDetail"
+                                             model="(Model.ParsedMessage.Segments[i], i, Model.ParsedMessage)"/>
                                 }
                             </fluent-tree-view>
                         </div>
@@ -123,8 +150,10 @@
     @if (Model.ParsedMessage != null)
     {
         <div class="mt-4" id="segment-analysis">
-            <hr class="my-4" />
-            <h2 class="section-title h4 mb-4">Segment Analysis</h2>
+            <hr class="my-4"/>
+            <h2 class="section-title h4 mb-4">
+                <i class="ms-Icon ms-Icon--Search me-2"></i>Segment Analysis
+            </h2>
             <div class="row g-4">
                 @for (int i = 0; i < Model.ParsedMessage.Segments.Count; i++)
                 {
@@ -134,7 +163,8 @@
                             <div class="p-4">
                                 <div class="d-flex justify-content-between align-items-center mb-4">
                                     <h3 class="h5 mb-0">
-                                        <i class="ms-Icon ms-Icon--Table" style="margin-right: 8px; color: #0078d4;"></i>
+                                        <i class="ms-Icon ms-Icon--Table"
+                                           style="margin-right: 8px; color: #0078d4;"></i>
                                         <span class="fw-bold">@segment.SegmentId</span>
                                         <span class="ms-2 badge bg-light text-dark fw-normal" style="font-size: 12px;">Segment #@(i + 1)</span>
                                     </h3>
@@ -143,30 +173,38 @@
                                 <div class="table-responsive">
                                     <table class="table table-hover align-middle mb-0">
                                         <thead class="table-light">
-                                            <tr>
-                                                <th style="width: 150px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Element ID</th>
-                                                <th style="width: 300px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Description</th>
-                                                <th style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Value</th>
-                                            </tr>
+                                        <tr>
+                                            <th style="width: 150px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                Element ID
+                                            </th>
+                                            <th style="width: 300px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                Description
+                                            </th>
+                                            <th style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                Value
+                                            </th>
+                                        </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach (var field in segment.Fields.OrderBy(f => f.Key))
-                                            {
-                                                <tr>
-                                                    <td><code class="fw-bold">@segment.SegmentId-@field.Key</code></td>
-                                                    <td class="text-secondary">@segment.GetFieldName(field.Key)</td>
-                                                    <td>
-                                                        @if (field.Value.Length > 100)
-                                                        {
-                                                            <div class="text-break" style="font-family: 'Cascadia Code', monospace; font-size: 13px;">@field.Value</div>
-                                                        }
-                                                        else
-                                                        {
-                                                            <code style="background: none; border: none; color: inherit; padding: 0;">@field.Value</code>
-                                                        }
-                                                    </td>
-                                                </tr>
-                                            }
+                                        @foreach (var field in segment.Fields.OrderBy(f => f.Key))
+                                        {
+                                            <tr>
+                                                <td><code class="fw-bold">@segment.SegmentId-@field.Key</code></td>
+                                                <td class="text-secondary">@segment.GetFieldName(field.Key)</td>
+                                                <td>
+                                                    @if (field.Value.Length > 100)
+                                                    {
+                                                        <div class="text-break"
+                                                             style="font-family: 'Cascadia Code', monospace; font-size: 13px;">@field.Value</div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <code
+                                                            style="background: none; border: none; color: inherit; padding: 0;">@field.Value</code>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
                                         </tbody>
                                     </table>
                                 </div>
@@ -181,16 +219,84 @@
 
 @section Scripts {
     <script>
+        const sampleCair2Message = `MSH|^~\\&|CAIR IIS|CAIR IIS||DE000001|20170509||RSP^K11^RSP_K11|200|P|2.5.1|||||||||Z42^CDCPHINVS|CAIR IIS|DE000001
+MSA|AA|200||0||0^Message Accepted^HL70357
+QAK|40005|OK|Z44
+QPD|Z44^Request Immunization History and Forecast^CDCPHINVS|40005||WALL^MIKE^^^^^L|WINDOWS^DOLLY|20170101|M|2222 ANYWHERE Way^^Fresno^CA^93726|^PRN^PH^^^555^5555382
+PID|1||291235^^^ORA^SR||WALL^MIKE|WINDOW^DOLLY|20170101|M|||2222 ANYWHERE WAY^^FRESNO^CA^93726^^H||^PRN^H^^^555^7575382|||||||||||N|0
+PD1|||||||||||02|N||||A
+ORC|RE||11171795
+RXA|0|1|20170101|20170101|08^HepBPeds^CVX|1.0|||00||^^^VICTORIATEST||||HBV12345||SKB|||CP
+RXR|IM|RT
+OBX|1|CE|38890-0^COMPONENT VACCINE TYPE^LN|1|45^HepB^CVX^90731^HepB^CPT||||||F
+OBX|2|NM|30973-2^Dose number in series^LN|1|1||||||F
+ORC|RE||11173468
+RXA|0|1|20170301|20170301|20^DTaP^CVX|1.0|||01|||||||||||CP
+RXR|IM|RT
+OBX|3|CE|38890-0^COMPONENT VACCINE TYPE^LN|1|107^DTP/aP^CVX^90700^DTP/aP^CPT||||||F
+OBX|4|NM|30973-2^Dose number in series^LN|1|1||||||F
+ORC|RE||0
+RXA|0|1|20170509|20170509|998^No Vaccine Administered^CVX|999
+OBX|5|CE|30979-9^Vaccines Due Next^LN|0|107^DTP/aP^CVX^90700^DTP/aP^CPT||||||F
+OBX|6|TS|30980-7^Date Vaccine Due^LN|0|20170501||||||F
+OBX|7|NM|30973-2^Vaccine due next dose number^LN|0|2||||||F
+OBX|8|TS|30981-5^Earliest date to give^LN|0|20170329||||||F
+OBX|9|CE|30982-3^Reason applied by forecast logic to project this vaccine^LN|0|ACIP schedule||||||F
+OBX|10|CE|30979-9^Vaccines Due Next^LN|1|85^HepA^CVX^90730^HepA^CPT||||||F
+OBX|11|TS|30980-7^Date Vaccine Due^LN|1|20180101||||||F
+OBX|12|NM|30973-2^Vaccine due next dose number^LN|1|1||||||F
+OBX|13|TS|30981-5^Earliest date to give^LN|1|20180101||||||F
+OBX|14|CE|30982-3^Reason applied by forecast logic to project this vaccine^LN|1|ACIP schedule||||||F
+OBX|15|CE|30979-9^Vaccines Due Next^LN|2|45^HepB^CVX^90731^HepB^CPT||||||F
+OBX|16|TS|30980-7^Date Vaccine Due^LN|2|20170301||||||F
+OBX|17|NM|30973-2^Vaccine due next dose number^LN|2|2||||||F
+OBX|18|TS|30981-5^Earliest date to give^LN|2|20170129||||||F
+OBX|19|CE|30982-3^Reason applied by forecast logic to project this vaccine^LN|2|ACIP schedule||||||F
+OBX|20|CE|30979-9^Vaccines Due Next^LN|3|17^Hib^CVX^90737^Hib^CPT||||||F
+OBX|21|TS|30980-7^Date Vaccine Due^LN|3|20170301||||||F
+OBX|22|NM|30973-2^Vaccine due next dose number^LN|3|1||||||F
+OBX|23|TS|30981-5^Earliest date to give^LN|3|20170212||||||F
+OBX|24|CE|30982-3^Reason applied by forecast logic to project this vaccine^LN|3|ACIP schedule||||||F
+OBX|25|CE|30979-9^Vaccines Due Next^LN|4|88^Influenza-seasnl^CVX^90724^Influenzaseasnl^CPT||||||F
+OBX|26|TS|30980-7^Date Vaccine Due^LN|4|20170701||||||F
+OBX|27|NM|30973-2^Vaccine due next dose number^LN|4|1||||||F
+OBX|28|TS|30981-5^Earliest date to give^LN|4|20170701||||||F
+OBX|29|CE|30982-3^Reason applied by forecast logic to project this vaccine^LN|4|ACIP schedule||||||F
+OBX|30|CE|30979-9^Vaccines Due Next^LN|5|03^MMR^CVX^90707^MMR^CPT||||||F
+OBX|31|TS|30980-7^Date Vaccine Due^LN|5|20180101||||||F
+OBX|32|NM|30973-2^Vaccine due next dose number^LN|5|0||||||F
+OBX|33|TS|30981-5^Earliest date to give^LN|5|20180101||||||F
+OBX|34|CE|30982-3^Reason applied by forecast logic to project this vaccine^LN|5|ACIP schedule||||||F
+OBX|35|CE|30979-9^Vaccines Due Next^LN|6|133^PneumoConjugate^CVX^90670^PneumoConjugate^CPT||||||F
+OBX|36|TS|30980-7^Date Vaccine Due^LN|6|20170301||||||F
+OBX|37|NM|30973-2^Vaccine due next dose number^LN|6|1||||||F
+OBX|38|TS|30981-5^Earliest date to give^LN|6|20170212||||||F
+OBX|39|CE|30982-3^Reason applied by forecast logic to project this vaccine^LN|6|ACIP schedule||||||F
+OBX|40|CE|30979-9^Vaccines Due Next^LN|7|89^Polio^CVX||||||F
+OBX|41|TS|30980-7^Date Vaccine Due^LN|7|20170301||||||F
+OBX|42|NM|30973-2^Vaccine due next dose number^LN|7|1||||||F
+OBX|43|TS|30981-5^Earliest date to give^LN|7|20170212||||||F
+OBX|44|CE|30982-3^Reason applied by forecast logic to project this vaccine^LN|7|ACIP schedule||||||F
+OBX|45|CE|30979-9^Vaccines Due Next^LN|8|21^Varicella^CVX^90716^Varicella^CPT||||||F
+OBX|46|TS|30980-7^Date Vaccine Due^LN|8|20180101||||||F
+OBX|47|NM|30973-2^Vaccine due next dose number^LN|8|1||||||F
+OBX|48|TS|30981-5^Earliest date to give^LN|8|20180101||||||F
+OBX|49|CE|30982-3^Reason applied by forecast logic to project this vaccine^LN|8|ACIP schedule||||||F`;
+
+        document.getElementById('load-sample-btn').addEventListener('click', function () {
+            document.getElementById('hl7-message').value = sampleCair2Message;
+        });
+
         document.getElementById('clear-btn').addEventListener('click', function () {
             window.location.href = '@Url.Action("Index", "Home")';
         });
 
-        document.getElementById('copy-input-btn')?.addEventListener('click', function() {
+        document.getElementById('copy-input-btn')?.addEventListener('click', function () {
             const text = document.getElementById('hl7-message').value;
             copyToClipboard(text, 'copy-input-btn');
         });
 
-        document.getElementById('copy-raw-btn')?.addEventListener('click', function() {
+        document.getElementById('copy-raw-btn')?.addEventListener('click', function () {
             const text = document.getElementById('hl7-message').value;
             copyToClipboard(text, 'copy-raw-btn');
         });
@@ -219,8 +325,8 @@
             // Find the segment tree item
             const segmentEl = document.getElementById('segment-' + index);
             if (segmentEl) {
-                segmentEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                
+                segmentEl.scrollIntoView({behavior: 'smooth', block: 'start'});
+
                 // Visual feedback
                 segmentEl.setAttribute('selected', '');
                 setTimeout(() => {
@@ -232,8 +338,8 @@
         function scrollToAnalysis(index) {
             const analysisEl = document.getElementById('analysis-' + index);
             if (analysisEl) {
-                analysisEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                
+                analysisEl.scrollIntoView({behavior: 'smooth', block: 'start'});
+
                 // Visual feedback: find the card inside the analysis div
                 const card = analysisEl.querySelector('fluent-card');
                 if (card) {

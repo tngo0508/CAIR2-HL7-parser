@@ -1,7 +1,5 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cair2Hl7Parser", "Cair2Hl7Parser\Cair2Hl7Parser.csproj", "{BB46999D-090E-4B64-91E9-DC91AA91BCAD}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hl7.Core", "Hl7.Core\Hl7.Core.csproj", "{D085518A-C10E-4D8D-AB0A-70AEE5FD096E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hl7Test", "Hl7Test\Hl7Test.csproj", "{6A3CF218-4E84-46EF-8E80-378356DB07EB}"
@@ -12,10 +10,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{BB46999D-090E-4B64-91E9-DC91AA91BCAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BB46999D-090E-4B64-91E9-DC91AA91BCAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BB46999D-090E-4B64-91E9-DC91AA91BCAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BB46999D-090E-4B64-91E9-DC91AA91BCAD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D085518A-C10E-4D8D-AB0A-70AEE5FD096E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D085518A-C10E-4D8D-AB0A-70AEE5FD096E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D085518A-C10E-4D8D-AB0A-70AEE5FD096E}.Release|Any CPU.ActiveCfg = Release|Any CPU

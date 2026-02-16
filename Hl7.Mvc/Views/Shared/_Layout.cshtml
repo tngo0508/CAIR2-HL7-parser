@@ -4,42 +4,70 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - CAIR2-HL7</title>
-    <script type="importmap"></script>
     <script type="module" src="https://unpkg.com/@@fluentui/web-components"></script>
+    <link rel="stylesheet" href="https://static2.sharepointonline.com/files/fabric-cdn-prod_20210115.001/office-ui-fabric-core/11.0.0/css/fabric.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Hl7.Mvc.styles.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+    <style>
+        body {
+            background-color: #f3f2f1;
+            margin: 0;
+            padding: 0;
+        }
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        @@media (min-width: 768px) {
+            body {
+                overflow: hidden;
+            }
+            .app-container {
+                height: 100vh;
+            }
+        }
+        .app-header {
+            background-color: #0078d4;
+            color: white;
+            padding: 0 20px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.14);
+            z-index: 1000;
+        }
+        .app-header a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .app-main {
+            flex-grow: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        footer {
+            display: none; /* Hide footer for a more app-like feel */
+        }
+    </style>
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">CAIR2-HL7</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+<body class="ms-Fabric">
+    <div class="app-container">
+        <header class="app-header">
+            <a asp-area="" asp-controller="Home" asp-action="Index">
+                <i class="ms-Icon ms-Icon--Health" style="margin-right: 8px;"></i>
+                CAIR2 HL7 Viewer
+            </a>
+        </header>
+        <main role="main" class="app-main">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Hl7.Mvc
-        </div>
-    </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

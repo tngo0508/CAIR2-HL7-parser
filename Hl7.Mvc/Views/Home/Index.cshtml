@@ -2,253 +2,86 @@
 @using Hl7.Core.Utils
 @using Hl7.Core.Types
 @{
-    ViewData["Title"] = "HL7 Parser";
+    ViewData["Title"] = "HL7 Viewer";
 }
 
-<style>
-    .hl7-raw {
-        font-family: 'Cascadia Code', 'Courier New', Courier, monospace;
-        background-color: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
-        padding: 10px;
-        white-space: pre;
-        overflow-x: auto;
-        font-size: 0.9rem;
-        line-height: 1.5;
-    }
-    .hl7-line-num {
-        display: inline-block;
-        width: 30px;
-        color: #adb5bd;
-        text-align: right;
-        margin-right: 10px;
-        user-select: none;
-        border-right: 1px solid #dee2e6;
-        padding-right: 5px;
-    }
-    .hl7-line {
-        cursor: pointer;
-        display: block;
-        padding: 0 5px;
-    }
-    .hl7-line:hover {
-        background-color: #e9ecef;
-    }
-    .hl7-line.active {
-        background-color: #cfe2ff;
-        font-weight: bold;
-    }
-    .segment-card {
-        margin-bottom: 20px;
-        border-left: 5px solid #0078d4;
-    }
-    .field-row {
-        border-bottom: 1px solid #f0f0f0;
-        padding: 8px 0;
-    }
-    .field-row:last-child {
-        border-bottom: none;
-    }
-    .component-badge {
-        font-size: 0.75rem;
-        background-color: #e1dfdd;
-        color: #323130;
-        padding: 2px 6px;
-        border-radius: 4px;
-        margin-right: 5px;
-        font-family: monospace;
-    }
-    .subcomponent-badge {
-        font-size: 0.7rem;
-        background-color: #edebe9;
-        color: #605e5c;
-        padding: 1px 4px;
-        border-radius: 3px;
-        margin-right: 3px;
-        font-family: monospace;
-    }
-    .repetition-container {
-        border-left: 2px dashed #ccc;
-        margin-left: 10px;
-        padding-left: 10px;
-        margin-top: 5px;
-    }
-</style>
+@section Styles {
+    <link rel="stylesheet" href="~/css/hl7-viewer.css" asp-append-version="true" />
+}
 
-<div class="container-fluid mt-4">
-    <div class="row">
-        <div class="col-12 text-center mb-4">
-            <h1 class="display-4">CAIR2 HL7 Viewer</h1>
-        </div>
+<div class="main-layout">
+    <!-- Sidebar: Input & Raw Explorer -->
+    <div class="sidebar">
+        <fluent-card class="input-card">
+            <div class="input-section">
+                <h2 class="section-title">HL7 Input</h2>
+                <form asp-action="Index" method="post" style="display: flex; flex-direction: column; flex-grow: 1;">
+                    <fluent-text-area name="Hl7Message" style="flex-grow: 1; width: 100%; font-family: 'Cascadia Code', monospace; margin-bottom: 12px;" placeholder="Paste your HL7 message here...">@Model.Hl7Message</fluent-text-area>
+                    <fluent-button type="submit" appearance="accent">Parse Message</fluent-button>
+                </form>
+            </div>
+        </fluent-card>
+
+        @if (Model.ParsedMessage != null)
+        {
+            <fluent-card class="raw-card">
+                <div class="raw-section">
+                    <h2 class="section-title">Raw Message</h2>
+                    <div class="hl7-raw" id="raw-explorer">
+                        @{
+                            var rawLines = Model.Hl7Message.Split(new[] { "\r\n", "\r", "\n", "\v", "\f", "\x1C" }, StringSplitOptions.RemoveEmptyEntries);
+                            for (int i = 0; i < rawLines.Length; i++)
+                            {
+                                <span class="hl7-line" onclick="scrollToSegment(@i)" id="line-@i"><span class="hl7-line-num">@(i + 1)</span>@rawLines[i]</span>
+                            }
+                        }
+                    </div>
+                </div>
+            </fluent-card>
+        }
     </div>
 
-    <div class="row">
-        <!-- Input Area -->
-        <div class="col-lg-5">
-            <fluent-card style="padding: 20px; height: 100%;">
-                <h4>HL7 Input</h4>
-                <form asp-action="Index" method="post">
-                    <div class="mb-3">
-                        <textarea id="hl7-input" name="Hl7Message" class="form-control" style="height: 300px; font-family: monospace;" placeholder="Paste your HL7 message here...">@Model.Hl7Message</textarea>
-                    </div>
-                    <div class="d-grid gap-2">
-                        <fluent-button type="submit" appearance="accent">Parse & View</fluent-button>
-                    </div>
-                </form>
+    <!-- Main Content: Parsed Viewer -->
+    <div class="content-area">
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert" style="margin-bottom: 20px;">
+                <i class="ms-Icon ms-Icon--ErrorBadge me-2"></i> @Model.ErrorMessage
+            </div>
+        }
 
-                @if (Model.ParsedMessage != null)
-                {
-                    <div class="mt-4">
-                        <h5>Raw Message Explorer</h5>
-                        <div class="hl7-raw" id="raw-explorer">
-                            @{
-                                var lines = Model.Hl7Message.Split(new[] { "\r\n", "\r", "\n", "\v", "\f", "\x1C" }, StringSplitOptions.RemoveEmptyEntries);
-                                for (int i = 0; i < lines.Length; i++)
-                                {
-                                    <span class="hl7-line" onclick="scrollToSegment(@i)" id="line-@i"><span class="hl7-line-num">@(i + 1)</span>@lines[i]</span>
-                                }
-                            }
-                        </div>
+        @if (Model.ParsedMessage != null)
+        {
+            <fluent-card class="viewer-card">
+                <div class="viewer-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="ms-fontSize-20 ms-fontWeight-semibold mb-0">Parsed Segments</h3>
+                        <span class="text-muted ms-fontSize-12">Found @Model.ParsedMessage.Segments.Count segments</span>
                     </div>
-                }
-            </fluent-card>
-        </div>
-
-        <!-- Viewer Area -->
-        <div class="col-lg-7">
-            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-            {
-                <div class="alert alert-danger" role="alert">
-                    @Model.ErrorMessage
-                </div>
-            }
-
-            @if (Model.ParsedMessage != null)
-            {
-                <div style="height: calc(100vh - 200px); overflow-y: auto; padding-right: 10px;" id="segments-container">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h3>Parsed Segments (@Model.ParsedMessage.Segments.Count)</h3>
-                        <span class="badge bg-primary">HL7 v@Model.ParsedMessage.MessageVersion</span>
-                    </div>
-
-                    @for (int i = 0; i < Model.ParsedMessage.Segments.Count; i++)
+                    @if (!string.IsNullOrEmpty(Model.ParsedMessage.MessageVersion))
                     {
-                        var segment = Model.ParsedMessage.Segments[i];
-                        <div class="card segment-card" id="segment-@i">
-                            <div class="card-header d-flex justify-content-between align-items-center bg-light">
-                                <h5 class="mb-0"><strong>@segment.SegmentId</strong> <small class="text-muted ml-2">#@(i + 1)</small></h5>
-                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-@i">
-                                    Toggle Details
-                                </button>
-                            </div>
-                            <div id="collapse-@i" class="collapse show">
-                                <div class="card-body p-0">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover mb-0">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th style="width: 100px;">Field</th>
-                                                    <th>Value / Breakdown</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach (var field in segment.Fields.OrderBy(f => f.Key))
-                                                {
-                                                    var fieldName = segment.GetFieldName(field.Key);
-                                                    var fieldType = segment.GetFieldType(field.Key);
-                                                    
-                                                    <tr>
-                                                        <td class="text-nowrap">
-                                                            <strong>@segment.SegmentId-@field.Key</strong><br/>
-                                                            <small class="text-muted">@fieldName</small>
-                                                        </td>
-                                                        <td>
-                                                            @if (string.IsNullOrEmpty(field.Value))
-                                                            {
-                                                                <span class="text-muted italic small">empty</span>
-                                                            }
-                                                            else
-                                                            {
-                                                                <div class="mb-1"><code>@field.Value</code></div>
-                                                                
-                                                                @* Breakdown Repetitions *@
-                                                                var repetitions = Hl7FieldHelper.ParseRepeating(field.Value, Model.ParsedMessage.Separators);
-                                                                if (repetitions.Count > 1 || field.Value.Contains(Model.ParsedMessage.Separators.ComponentSeparator))
-                                                                {
-                                                                    <div class="small mt-2">
-                                                                        @foreach (var rep in repetitions)
-                                                                        {
-                                                                            <div class="@(repetitions.Count > 1 ? "repetition-container" : "")">
-                                                                                @if (repetitions.Count > 1) { <div class="text-muted mb-1">Repetition:</div> }
-                                                                                
-                                                                                @{
-                                                                                    CompositeDataType composite;
-                                                                                    if (typeof(CompositeDataType).IsAssignableFrom(fieldType) && fieldType != typeof(CompositeDataType))
-                                                                                    {
-                                                                                        // Try to use the specialized type if it has a constructor for the value
-                                                                                        try {
-                                                                                            composite = (CompositeDataType)Activator.CreateInstance(fieldType, rep, Model.ParsedMessage.Separators.ComponentSeparator, Model.ParsedMessage.Separators.SubComponentSeparator)!;
-                                                                                        } catch {
-                                                                                            composite = Hl7FieldHelper.ParseComposite(rep, Model.ParsedMessage.Separators);
-                                                                                        }
-                                                                                    }
-                                                                                    else
-                                                                                    {
-                                                                                        composite = Hl7FieldHelper.ParseComposite(rep, Model.ParsedMessage.Separators);
-                                                                                    }
-
-                                                                                    if (composite.Components.Count > 1)
-                                                                                    {
-                                                                                        for (int c = 0; c < composite.Components.Count; c++)
-                                                                                        {
-                                                                                            if (!string.IsNullOrEmpty(composite.Components[c]))
-                                                                                            {
-                                                                                                <div class="ms-2 mb-1">
-                                                                                                    <span class="component-badge" title="C@(c+1)">@composite.GetComponentName(c)</span>@composite.Components[c]
-                                                                                                    
-                                                                                                    @if (composite.SubComponents.ContainsKey(c) && composite.SubComponents[c].Count > 1)
-                                                                                                    {
-                                                                                                        <div class="ms-3 mt-1">
-                                                                                                            @foreach (var sub in composite.SubComponents[c])
-                                                                                                            {
-                                                                                                                if (!string.IsNullOrEmpty(sub))
-                                                                                                                {
-                                                                                                                    <span class="subcomponent-badge">S</span>@sub
-                                                                                                                }
-                                                                                                            }
-                                                                                                        </div>
-                                                                                                    }
-                                                                                                </div>
-                                                                                            }
-                                                                                        }
-                                                                                    }
-                                                                                }
-                                                                            </div>
-                                                                        }
-                                                                    </div>
-                                                                }
-                                                            }
-                                                        </td>
-                                                    </tr>
-                                                }
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <fluent-badge appearance="accent">HL7 v@(Model.ParsedMessage.MessageVersion)</fluent-badge>
                     }
                 </div>
-            }
-            else if (string.IsNullOrEmpty(Model.ErrorMessage))
-            {
-                <div class="text-center mt-5 text-muted">
-                    <i class="display-1 d-block mb-3">📄</i>
-                    <p>Enter an HL7 message on the left to start viewing.</p>
+
+                <div class="segments-list" id="segments-container">
+                    <fluent-tree-view>
+                        @for (int i = 0; i < Model.ParsedMessage.Segments.Count; i++)
+                        {
+                            <partial name="_SegmentDetail" model="(Model.ParsedMessage.Segments[i], i, Model.ParsedMessage)" />
+                        }
+                    </fluent-tree-view>
                 </div>
-            }
-        </div>
+            </fluent-card>
+        }
+        else if (string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div style="display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; color: #605e5c;">
+                <i class="ms-Icon ms-Icon--DocumentSearch" style="font-size: 64px; margin-bottom: 16px;"></i>
+                <p class="ms-fontSize-18">Ready to parse your HL7 message.</p>
+                <p class="ms-fontSize-14">Paste the message in the left panel and click "Parse Message".</p>
+            </div>
+        }
     </div>
 </div>
 
@@ -257,17 +90,18 @@
         function scrollToSegment(index) {
             // Highlight the line
             document.querySelectorAll('.hl7-line').forEach(el => el.classList.remove('active'));
-            document.getElementById('line-' + index).classList.add('active');
+            const lineEl = document.getElementById('line-' + index);
+            if (lineEl) lineEl.classList.add('active');
 
-            // Scroll to the segment card
+            // Find the segment tree item
             const segmentEl = document.getElementById('segment-' + index);
             if (segmentEl) {
                 segmentEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 
-                // Add a temporary highlight effect to the card
-                segmentEl.style.backgroundColor = '#fff3cd';
+                // Visual feedback
+                segmentEl.setAttribute('selected', '');
                 setTimeout(() => {
-                    segmentEl.style.backgroundColor = '';
+                    segmentEl.removeAttribute('selected');
                 }, 2000);
             }
         }

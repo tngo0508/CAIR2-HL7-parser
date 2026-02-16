@@ -49,7 +49,12 @@ public class Hl7Parser
                 message.AddSegment(headerSegment);
                 if (headerSegment is MSHSegment msh)
                 {
-                    message.MessageVersion = msh.VersionId;
+                    var version = msh.VersionId;
+                    if (version.Contains(_separators.ComponentSeparator))
+                    {
+                        version = version.Split(_separators.ComponentSeparator)[0];
+                    }
+                    message.MessageVersion = version;
                 }
                 message.Separators = _separators;
             }

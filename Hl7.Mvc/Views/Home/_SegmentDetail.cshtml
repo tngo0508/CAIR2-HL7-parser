@@ -1,0 +1,20 @@
+@model (Hl7.Core.Base.Segment Segment, int Index, Hl7.Core.Base.Hl7Message Message)
+
+@{
+    var segment = Model.Segment;
+    var i = Model.Index;
+    var message = Model.Message;
+}
+
+<fluent-tree-item id="segment-@i" expanded>
+    <div slot="start" style="display: flex; align-items: center;">
+        <i class="ms-Icon ms-Icon--Table" style="margin-right: 8px; color: #0078d4;"></i>
+        <strong style="font-size: 14px; color: #323130;">@segment.SegmentId</strong>
+        <span class="ms-2 badge bg-light text-dark" style="font-weight: 400; font-size: 11px;">#@(i + 1)</span>
+    </div>
+    
+    @foreach (var field in segment.Fields.OrderBy(f => f.Key))
+    {
+        <partial name="_FieldBreakdown" model="(field, segment, message)" />
+    }
+</fluent-tree-item>
